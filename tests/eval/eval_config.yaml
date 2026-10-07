@@ -1,0 +1,24 @@
+metrics_to_run:
+  - pytest_unit_test_pass
+  - patch_semantic_equivalence
+  - multi_turn_task_success
+  - multi_turn_tool_use_quality
+  - agent_tool_call_count
+
+custom_metrics:
+  - name: pytest_unit_test_pass
+    custom_function_file: pytest_metric.py
+
+  - name: patch_semantic_equivalence
+    custom_function_file: response_quality.py
+
+  - name: agent_tool_call_count
+    custom_function: |
+      def evaluate(instance):
+          calls = 0
+          for turn in (instance.get("agent_data") or {}).get("turns", []):
+              for event in turn.get("events", []):
+                  for part in (event.get("content") or {}).get("parts", []):
+                      if isinstance(part, dict) and "function_call" in part:
+                          calls += 1
+          return {"score": calls, "explanation": f"Total tool calls made: {calls}"}

@@ -1,0 +1,1695 @@
+{
+  "eval_cases": [
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "[CASE_ID=pr_101_tier_1_simple] [TARGET_FILE=orderflow/pricing.py] [PYTEST_TARGET=test_calculate_tax_round_half_up] [COMPLEXITY_TIER=tier_1_simple]\n\nIn `orderflow/pricing.py`, `calculate_tax` uses Python's built-in `round()` which causes round-half-to-even errors on .005 tax amounts (e.g. 100.02 * 0.25 rounds to 25.0 instead of 25.01). Please fix `calculate_tax` to use `Decimal(str(subtotal)) * Decimal(str(tax_rate))` with `ROUND_HALF_UP` to `0.01`.\n\nUse `read_repo_file` to inspect the current file, then use `test_and_verify_patch` to verify your fix against the unit test suite, and include the final unified diff in your response."
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "The fix updates `calculate_tax` in `orderflow/pricing.py` to use `Decimal` arithmetic with `ROUND_HALF_UP` rounding quantized to `0.01`.\n\n### Unified Diff\n```diff\n--- a/orderflow/pricing.py\n+++ b/orderflow/pricing.py\n@@ -9,9 +9,10 @@\n     Must round to 2 decimal places using standard commercial rounding (ROUND_HALF_UP),\n     NOT Python's default round-half-to-even.\n     \"\"\"\n-    # BUG (PR-101): Python's built-in round() uses banker's rounding (round-half-to-even),\n-    # which rounds 10.005 -> 10.00 instead of 10.01.\n-    return round(subtotal * tax_rate, 2)\n+    tax = (Decimal(str(subtotal)) * Decimal(str(tax_rate))).quantize(\n+        Decimal(\"0.01\"), rounding=ROUND_HALF_UP\n+    )\n+    return float(tax)\n \n \n def round_currency(amount: float) -> float:\n```\n\n### Test Status\nThe test target `test_calculate_tax_round_half_up` passed with status **PASSED** (`1 passed, 5 deselected`)."
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "reference": {
+        "response": {
+          "parts": [
+            {
+              "text": "diff --git a/orderflow/pricing.py b/orderflow/pricing.py\nindex 284b0eb..8c99711 100644\n--- a/orderflow/pricing.py\n+++ b/orderflow/pricing.py\n@@ -9,9 +9,8 @@ def calculate_tax(subtotal: float, tax_rate: float) -> float:\n     Must round to 2 decimal places using standard commercial rounding (ROUND_HALF_UP),\n     NOT Python's default round-half-to-even.\n     \"\"\"\n-    # BUG (PR-101): Python's built-in round() uses banker's rounding (round-half-to-even),\n-    # which rounds 10.005 -> 10.00 instead of 10.01.\n-    return round(subtotal * tax_rate, 2)\n+    tax = Decimal(str(subtotal)) * Decimal(str(tax_rate))\n+    return float(tax.quantize(Decimal(\"0.01\"), rounding=ROUND_HALF_UP))\n \n \n def round_currency(amount: float) -> float:"
+            }
+          ],
+          "role": "model"
+        }
+      },
+      "eval_case_id": "pr_101_tier_1_simple",
+      "agent_data": {
+        "agents": {
+          "root_agent": {
+            "agent_id": "root_agent",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are an expert software engineering coding agent. For every task:\n1. Call `read_repo_file` on the target file mentioned in the prompt.\n2. Call `test_and_verify_patch` with the exact `old_string`, `new_string`, and `pytest_target` to verify your fix passes the unit test suite.\n3. In your final response, include the exact unified diff inside a ```diff code block and confirm the test status.",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Read the contents of a file in the target repository at the pre-PR baseline commit.\n\nArgs:\n    file_path: Relative path to the file inside the repository, e.g. 'orderflow/pricing.py'.\n\nReturns:\n    Dictionary with 'file_path' and 'content' (or 'error' if not found).",
+                    "name": "read_repo_file",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "file_path": {
+                          "title": "File Path",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "file_path"
+                      ],
+                      "title": "read_repo_fileParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Apply a proposed code edit in an isolated sandbox copy of the repo and run pytest.\n\nArgs:\n    file_path: Relative path to the file to modify, e.g. 'orderflow/pricing.py'.\n    old_string: Exact existing substring in the file to replace.\n    new_string: Replacement code string.\n    pytest_target: Optional pytest -k test function filter, e.g. 'test_calculate_tax_round_half_up'.\n\nReturns:\n    Dictionary with 'status' ('PASSED' or 'FAILED'), 'unified_diff', and 'pytest_output'.",
+                    "name": "test_and_verify_patch",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "file_path": {
+                          "title": "File Path",
+                          "type": "string"
+                        },
+                        "old_string": {
+                          "title": "Old String",
+                          "type": "string"
+                        },
+                        "new_string": {
+                          "title": "New String",
+                          "type": "string"
+                        },
+                        "pytest_target": {
+                          "default": "",
+                          "title": "Pytest Target",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "file_path",
+                        "old_string",
+                        "new_string"
+                      ],
+                      "title": "test_and_verify_patchParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_3575385",
+                        "args": {
+                          "file_path": "orderflow/pricing.py"
+                        },
+                        "name": "read_repo_file"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_3575385",
+                        "name": "read_repo_file",
+                        "response": {
+                          "file_path": "orderflow/pricing.py",
+                          "content": "\"\"\"Pricing and tax calculation utilities.\"\"\"\n\nfrom decimal import Decimal, ROUND_HALF_UP\n\n\ndef calculate_tax(subtotal: float, tax_rate: float) -> float:\n    \"\"\"Calculate tax amount for a subtotal and tax_rate (e.g., 0.25 for 25%).\n\n    Must round to 2 decimal places using standard commercial rounding (ROUND_HALF_UP),\n    NOT Python's default round-half-to-even.\n    \"\"\"\n    # BUG (PR-101): Python's built-in round() uses banker's rounding (round-half-to-even),\n    # which rounds 10.005 -> 10.00 instead of 10.01.\n    return round(subtotal * tax_rate, 2)\n\n\ndef round_currency(amount: float) -> float:\n    \"\"\"Round an arbitrary currency float to 2 decimal places using ROUND_HALF_UP.\"\"\"\n    # BUG (PR-102): Uses built-in round() instead of Decimal ROUND_HALF_UP.\n    return round(amount, 2)\n"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_5530851",
+                        "args": {
+                          "old_string": "    # BUG (PR-101): Python's built-in round() uses banker's rounding (round-half-to-even),\n    # which rounds 10.005 -> 10.00 instead of 10.01.\n    return round(subtotal * tax_rate, 2)",
+                          "file_path": "orderflow/pricing.py",
+                          "pytest_target": "test_calculate_tax_round_half_up",
+                          "new_string": "    tax = (Decimal(str(subtotal)) * Decimal(str(tax_rate))).quantize(\n        Decimal(\"0.01\"), rounding=ROUND_HALF_UP\n    )\n    return float(tax)"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_5530851",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "PASSED",
+                          "exit_code": 0,
+                          "unified_diff": "--- a/orderflow/pricing.py\n+++ b/orderflow/pricing.py\n@@ -9,9 +9,10 @@\n     Must round to 2 decimal places using standard commercial rounding (ROUND_HALF_UP),\n     NOT Python's default round-half-to-even.\n     \"\"\"\n-    # BUG (PR-101): Python's built-in round() uses banker's rounding (round-half-to-even),\n-    # which rounds 10.005 -> 10.00 instead of 10.01.\n-    return round(subtotal * tax_rate, 2)\n+    tax = (Decimal(str(subtotal)) * Decimal(str(tax_rate))).quantize(\n+        Decimal(\"0.01\"), rounding=ROUND_HALF_UP\n+    )\n+    return float(tax)\n \n \n def round_currency(amount: float) -> float:",
+                          "pytest_output": ".                                                                        [100%]\n1 passed, 5 deselected in 0.04s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_3775532",
+                        "args": {
+                          "old_string": "    # BUG (PR-101): Python's built-in round() uses banker's rounding (round-half-to-even),\n    # which rounds 10.005 -> 10.00 instead of 10.01.\n    return round(subtotal * tax_rate, 2)",
+                          "new_string": "    tax = (Decimal(str(subtotal)) * Decimal(str(tax_rate))).quantize(\n        Decimal(\"0.01\"), rounding=ROUND_HALF_UP\n    )\n    return float(tax)",
+                          "file_path": "orderflow/pricing.py",
+                          "pytest_target": ""
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_3775532",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "FAILED",
+                          "exit_code": 1,
+                          "unified_diff": "--- a/orderflow/pricing.py\n+++ b/orderflow/pricing.py\n@@ -9,9 +9,10 @@\n     Must round to 2 decimal places using standard commercial rounding (ROUND_HALF_UP),\n     NOT Python's default round-half-to-even.\n     \"\"\"\n-    # BUG (PR-101): Python's built-in round() uses banker's rounding (round-half-to-even),\n-    # which rounds 10.005 -> 10.00 instead of 10.01.\n-    return round(subtotal * tax_rate, 2)\n+    tax = (Decimal(str(subtotal)) * Decimal(str(tax_rate))).quantize(\n+        Decimal(\"0.01\"), rounding=ROUND_HALF_UP\n+    )\n+    return float(tax)\n \n \n def round_currency(amount: float) -> float:",
+                          "pytest_output": ".FFFFF                                                                   [100%]\n=================================== FAILURES ===================================\n_________________________ test_round_currency_half_up __________________________\n\n    def test_round_currency_half_up():\n>       assert round_currency(2.505) == 2.51\nE       assert 2.5 == 2.51\nE        +  where 2.5 = round_currency(2.505)\n\ntests/test_orderflow.py:21: AssertionError\n________________________ test_validate_invoice_ref_luhn ________________________\n\n    def test_validate_invoice_ref_luhn():\n        # \"79927398713\" is a classic valid 11-digit Luhn number\n        assert validate_invoice_ref(\"79927398713\") is True\n        assert validate_invoice_ref(\"7992-7398-713\") is True\n        # Invalid check digit (last digit changed from 3 to 4)\n>       assert validate_invoice_ref(\"79927398714\") is False\nE       AssertionError: assert True is False\nE        +  where True = validate_invoice_ref('79927398714')\n\ntests/test_orderflow.py:32: AssertionError\n_________________ test_apply_stacked_discounts_caps_and_floors _________________\n\n    def test_apply_stacked_discounts_caps_and_floors():\n        # Two 30% coupons (60%) must be capped at default max_discount_pct=0.50 -> 50% of 200 = 100, minus 20 voucher = 80.0\n>       assert apply_stacked_discounts(200.0, [0.30, 0.30], fixed_voucher=20.0) == 80.0\nE       assert 60.0 == 80.0\nE        +  where 60.0 = apply_stacked_discounts(200.0, [0.3, 0.3], fixed_voucher=20.0)\n\ntests/t"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_124834",
+                        "args": {
+                          "pytest_target": "test_calculate_tax_round_half_up",
+                          "new_string": "    tax = (Decimal(str(subtotal)) * Decimal(str(tax_rate))).quantize(\n        Decimal(\"0.01\"), rounding=ROUND_HALF_UP\n    )\n    return float(tax)",
+                          "old_string": "    # BUG (PR-101): Python's built-in round() uses banker's rounding (round-half-to-even),\n    # which rounds 10.005 -> 10.00 instead of 10.01.\n    return round(subtotal * tax_rate, 2)",
+                          "file_path": "orderflow/pricing.py"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_124834",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "PASSED",
+                          "exit_code": 0,
+                          "unified_diff": "--- a/orderflow/pricing.py\n+++ b/orderflow/pricing.py\n@@ -9,9 +9,10 @@\n     Must round to 2 decimal places using standard commercial rounding (ROUND_HALF_UP),\n     NOT Python's default round-half-to-even.\n     \"\"\"\n-    # BUG (PR-101): Python's built-in round() uses banker's rounding (round-half-to-even),\n-    # which rounds 10.005 -> 10.00 instead of 10.01.\n-    return round(subtotal * tax_rate, 2)\n+    tax = (Decimal(str(subtotal)) * Decimal(str(tax_rate))).quantize(\n+        Decimal(\"0.01\"), rounding=ROUND_HALF_UP\n+    )\n+    return float(tax)\n \n \n def round_currency(amount: float) -> float:",
+                          "pytest_output": ".                                                                        [100%]\n1 passed, 5 deselected in 0.03s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "The fix updates `calculate_tax` in `orderflow/pricing.py` to use `Decimal` arithmetic with `ROUND_HALF_UP` rounding quantized to `0.01`.\n\n### Unified Diff\n```diff\n--- a/orderflow/pricing.py\n+++ b/orderflow/pricing.py\n@@ -9,9 +9,10 @@\n     Must round to 2 decimal places using standard commercial rounding (ROUND_HALF_UP),\n     NOT Python's default round-half-to-even.\n     \"\"\"\n-    # BUG (PR-101): Python's built-in round() uses banker's rounding (round-half-to-even),\n-    # which rounds 10.005 -> 10.00 instead of 10.01.\n-    return round(subtotal * tax_rate, 2)\n+    tax = (Decimal(str(subtotal)) * Decimal(str(tax_rate))).quantize(\n+        Decimal(\"0.01\"), rounding=ROUND_HALF_UP\n+    )\n+    return float(tax)\n \n \n def round_currency(amount: float) -> float:\n```\n\n### Test Status\nThe test target `test_calculate_tax_round_half_up` passed with status **PASSED** (`1 passed, 5 deselected`)."
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "[CASE_ID=pr_103_tier_1_simple] [TARGET_FILE=orderflow/validators.py] [PYTEST_TARGET=test_validate_invoice_ref_luhn] [COMPLEXITY_TIER=tier_1_simple]\n\nFix `validate_invoice_ref` in `orderflow/validators.py`. Right now it only checks length (8-12) and digits, but skips the Luhn Mod-10 check digit verification. Implement the Luhn check across all digits of `cleaned`.\n\nUse `read_repo_file` to inspect the current file, then use `test_and_verify_patch` to verify your fix against the unit test suite, and include the final unified diff in your response."
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "I have completed the fix for `validate_invoice_ref` in `orderflow/validators.py`.\n\n### Solution Details\n1. Verified input characters and length requirements (8-12 digits).\n2. Implemented the standard Luhn Mod-10 check algorithm over all digits of `cleaned` (doubling every second digit from the right, subtracting 9 if greater than 9, and verifying that the total sum modulo 10 equals 0).\n3. Verified the implementation against `test_validate_invoice_ref_luhn`, which passed successfully.\n\n### Unified Diff\n```diff\n--- a/orderflow/validators.py\n+++ b/orderflow/validators.py\n@@ -14,5 +14,12 @@\n         return False\n     if not (8 <= len(cleaned) <= 12):\n         return False\n-    # BUG (PR-103): Missing Luhn Mod-10 check digit validation!\n-    return True\n+    total = 0\n+    for i, ch in enumerate(reversed(cleaned)):\n+        d = int(ch)\n+        if i % 2 == 1:\n+            d *= 2\n+            if d > 9:\n+                d -= 9\n+        total += d\n+    return total % 10 == 0\n```\n\n### Test Verification\nThe target test `test_validate_invoice_ref_luhn` passed with status **PASSED** (`1 passed, 5 deselected in 0.03s`)."
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "reference": {
+        "response": {
+          "parts": [
+            {
+              "text": "diff --git a/orderflow/validators.py b/orderflow/validators.py\nindex 76b2bc6..c72e5c5 100644\n--- a/orderflow/validators.py\n+++ b/orderflow/validators.py\n@@ -14,5 +14,12 @@ def validate_invoice_ref(ref: str) -> bool:\n         return False\n     if not (8 <= len(cleaned) <= 12):\n         return False\n-    # BUG (PR-103): Missing Luhn Mod-10 check digit validation!\n-    return True\n+    total = 0\n+    for i, ch in enumerate(reversed(cleaned)):\n+        d = int(ch)\n+        if i % 2 == 1:\n+            d *= 2\n+            if d > 9:\n+                d -= 9\n+        total += d\n+    return total % 10 == 0"
+            }
+          ],
+          "role": "model"
+        }
+      },
+      "eval_case_id": "pr_103_tier_1_simple",
+      "agent_data": {
+        "agents": {
+          "root_agent": {
+            "agent_id": "root_agent",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are an expert software engineering coding agent. For every task:\n1. Call `read_repo_file` on the target file mentioned in the prompt.\n2. Call `test_and_verify_patch` with the exact `old_string`, `new_string`, and `pytest_target` to verify your fix passes the unit test suite.\n3. In your final response, include the exact unified diff inside a ```diff code block and confirm the test status.",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Read the contents of a file in the target repository at the pre-PR baseline commit.\n\nArgs:\n    file_path: Relative path to the file inside the repository, e.g. 'orderflow/pricing.py'.\n\nReturns:\n    Dictionary with 'file_path' and 'content' (or 'error' if not found).",
+                    "name": "read_repo_file",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "file_path": {
+                          "title": "File Path",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "file_path"
+                      ],
+                      "title": "read_repo_fileParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Apply a proposed code edit in an isolated sandbox copy of the repo and run pytest.\n\nArgs:\n    file_path: Relative path to the file to modify, e.g. 'orderflow/pricing.py'.\n    old_string: Exact existing substring in the file to replace.\n    new_string: Replacement code string.\n    pytest_target: Optional pytest -k test function filter, e.g. 'test_calculate_tax_round_half_up'.\n\nReturns:\n    Dictionary with 'status' ('PASSED' or 'FAILED'), 'unified_diff', and 'pytest_output'.",
+                    "name": "test_and_verify_patch",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "file_path": {
+                          "title": "File Path",
+                          "type": "string"
+                        },
+                        "old_string": {
+                          "title": "Old String",
+                          "type": "string"
+                        },
+                        "new_string": {
+                          "title": "New String",
+                          "type": "string"
+                        },
+                        "pytest_target": {
+                          "default": "",
+                          "title": "Pytest Target",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "file_path",
+                        "old_string",
+                        "new_string"
+                      ],
+                      "title": "test_and_verify_patchParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_52351",
+                        "args": {
+                          "file_path": "orderflow/validators.py"
+                        },
+                        "name": "read_repo_file"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_52351",
+                        "name": "read_repo_file",
+                        "response": {
+                          "file_path": "orderflow/validators.py",
+                          "content": "\"\"\"Invoice and payment reference validators.\"\"\"\n\n\ndef validate_invoice_ref(ref: str) -> bool:\n    \"\"\"Validate an 8-to-12 digit numeric invoice reference with a Mod-10 (Luhn) check digit.\n\n    Rules:\n    1. Strip spaces/hyphens; must be all digits and between 8 and 12 characters inclusive.\n    2. The last digit must be a valid Luhn Mod-10 check digit computed over the preceding digits\n       (doubling every second digit from the right, subtracting 9 if > 9, total sum % 10 == 0).\n    \"\"\"\n    cleaned = ref.replace(\" \", \"\").replace(\"-\", \"\")\n    if not cleaned.isdigit():\n        return False\n    if not (8 <= len(cleaned) <= 12):\n        return False\n    # BUG (PR-103): Missing Luhn Mod-10 check digit validation!\n    return True\n"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_140482",
+                        "args": {
+                          "file_path": "orderflow/validators.py",
+                          "old_string": "    # BUG (PR-103): Missing Luhn Mod-10 check digit validation!\n    return True",
+                          "pytest_target": "test_validate_invoice_ref_luhn",
+                          "new_string": "    # BUG (PR-103): Missing Luhn Mod-10 check digit validation!\n    total = 0\n    for i, ch in enumerate(reversed(cleaned)):\n        d = int(ch)\n        if i % 2 == 1:\n            d *= 2\n            if d > 9:\n                d -= 9\n        total += d\n    return total % 10 == 0"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_140482",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "PASSED",
+                          "exit_code": 0,
+                          "unified_diff": "--- a/orderflow/validators.py\n+++ b/orderflow/validators.py\n@@ -15,4 +15,12 @@\n     if not (8 <= len(cleaned) <= 12):\n         return False\n     # BUG (PR-103): Missing Luhn Mod-10 check digit validation!\n-    return True\n+    total = 0\n+    for i, ch in enumerate(reversed(cleaned)):\n+        d = int(ch)\n+        if i % 2 == 1:\n+            d *= 2\n+            if d > 9:\n+                d -= 9\n+        total += d\n+    return total % 10 == 0",
+                          "pytest_output": ".                                                                        [100%]\n1 passed, 5 deselected in 0.04s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_4046517",
+                        "args": {
+                          "old_string": "    # BUG (PR-103): Missing Luhn Mod-10 check digit validation!\n    return True",
+                          "file_path": "orderflow/validators.py",
+                          "pytest_target": "",
+                          "new_string": "    total = 0\n    for i, ch in enumerate(reversed(cleaned)):\n        d = int(ch)\n        if i % 2 == 1:\n            d *= 2\n            if d > 9:\n                d -= 9\n        total += d\n    return total % 10 == 0"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_4046517",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "FAILED",
+                          "exit_code": 1,
+                          "unified_diff": "--- a/orderflow/validators.py\n+++ b/orderflow/validators.py\n@@ -14,5 +14,12 @@\n         return False\n     if not (8 <= len(cleaned) <= 12):\n         return False\n-    # BUG (PR-103): Missing Luhn Mod-10 check digit validation!\n-    return True\n+    total = 0\n+    for i, ch in enumerate(reversed(cleaned)):\n+        d = int(ch)\n+        if i % 2 == 1:\n+            d *= 2\n+            if d > 9:\n+                d -= 9\n+        total += d\n+    return total % 10 == 0",
+                          "pytest_output": "FF.FFF                                                                   [100%]\n=================================== FAILURES ===================================\n_______________________ test_calculate_tax_round_half_up _______________________\n\n    def test_calculate_tax_round_half_up():\n        # 100.02 * 0.25 = 25.005 -> ROUND_HALF_UP must yield 25.01 (float round gives 25.0)\n>       assert calculate_tax(100.02, 0.25) == 25.01\nE       assert 25.0 == 25.01\nE        +  where 25.0 = calculate_tax(100.02, 0.25)\n\ntests/test_orderflow.py:13: AssertionError\n_________________________ test_round_currency_half_up __________________________\n\n    def test_round_currency_half_up():\n>       assert round_currency(2.505) == 2.51\nE       assert 2.5 == 2.51\nE        +  where 2.5 = round_currency(2.505)\n\ntests/test_orderflow.py:21: AssertionError\n_________________ test_apply_stacked_discounts_caps_and_floors _________________\n\n    def test_apply_stacked_discounts_caps_and_floors():\n        # Two 30% coupons (60%) must be capped at default max_discount_pct=0.50 -> 50% of 200 = 100, minus 20 voucher = 80.0\n>       assert apply_stacked_discounts(200.0, [0.30, 0.30], fixed_voucher=20.0) == 80.0\nE       assert 60.0 == 80.0\nE        +  where 60.0 = apply_stacked_discounts(200.0, [0.3, 0.3], fixed_voucher=20.0)\n\ntests/test_orderflow.py:42: AssertionError\n___________________________ test_compute_retry_delay ___________________________\n\n    def test_compute_retry_delay():\n        # Standard exponential "
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_31398",
+                        "args": {
+                          "old_string": "    # BUG (PR-103): Missing Luhn Mod-10 check digit validation!\n    return True",
+                          "new_string": "    total = 0\n    for i, ch in enumerate(reversed(cleaned)):\n        d = int(ch)\n        if i % 2 == 1:\n            d *= 2\n            if d > 9:\n                d -= 9\n        total += d\n    return total % 10 == 0",
+                          "file_path": "orderflow/validators.py",
+                          "pytest_target": "test_validate_invoice_ref_luhn"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_31398",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "PASSED",
+                          "exit_code": 0,
+                          "unified_diff": "--- a/orderflow/validators.py\n+++ b/orderflow/validators.py\n@@ -14,5 +14,12 @@\n         return False\n     if not (8 <= len(cleaned) <= 12):\n         return False\n-    # BUG (PR-103): Missing Luhn Mod-10 check digit validation!\n-    return True\n+    total = 0\n+    for i, ch in enumerate(reversed(cleaned)):\n+        d = int(ch)\n+        if i % 2 == 1:\n+            d *= 2\n+            if d > 9:\n+                d -= 9\n+        total += d\n+    return total % 10 == 0",
+                          "pytest_output": ".                                                                        [100%]\n1 passed, 5 deselected in 0.03s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_129522",
+                        "args": {
+                          "file_path": "tests/test_orderflow.py"
+                        },
+                        "name": "read_repo_file"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_129522",
+                        "name": "read_repo_file",
+                        "response": {
+                          "file_path": "tests/test_orderflow.py",
+                          "content": "\"\"\"Unit test suite for orderflow.\"\"\"\n\nfrom orderflow.pricing import calculate_tax, round_currency\nfrom orderflow.validators import validate_invoice_ref\nfrom orderflow.discounts import apply_stacked_discounts\nfrom orderflow.webhooks import compute_retry_delay\nfrom orderflow.settlement import reconcile_batch\n\n\n# --- PR-101: Tax rounding tests ---\ndef test_calculate_tax_round_half_up():\n    # 100.02 * 0.25 = 25.005 -> ROUND_HALF_UP must yield 25.01 (float round gives 25.0)\n    assert calculate_tax(100.02, 0.25) == 25.01\n    # 10.02 * 0.25 = 2.505 -> ROUND_HALF_UP must yield 2.51\n    assert calculate_tax(10.02, 0.25) == 2.51\n    assert calculate_tax(200.0, 0.15) == 30.00\n\n\n# --- PR-102: Currency rounding tests ---\ndef test_round_currency_half_up():\n    assert round_currency(2.505) == 2.51\n    assert round_currency(10.005) == 10.01\n    assert round_currency(4.224) == 4.22\n\n\n# --- PR-103: Invoice reference Luhn Mod-10 validation tests ---\ndef test_validate_invoice_ref_luhn():\n    # \"79927398713\" is a classic valid 11-digit Luhn number\n    assert validate_invoice_ref(\"79927398713\") is True\n    assert validate_invoice_ref(\"7992-7398-713\") is True\n    # Invalid check digit (last digit changed from 3 to 4)\n    assert validate_invoice_ref(\"79927398714\") is False\n    assert validate_invoice_ref(\"12345678\") is False\n    # Too short (<8 digits) or non-numeric\n    assert validate_invoice_ref(\"1234567\") is False\n    assert validate_invoice_ref(\"7992739871A\") is False\n\n\n# --- PR-104 & PR-105: Stacked discounts tests ---\ndef test_apply_stacked_discounts_caps_and_floors():\n    # Two 30% coupons (60%) must be capped at default max_discount_pct=0.50 -> 50% of 200 = 100, minus 20 voucher = 80.0\n    assert apply_stacked_discounts(200.0, [0.30, 0.30], fixed_voucher=20.0) == 80.0\n    # Voucher larger than discounted subtotal must floor at 0.0\n    assert apply_stacked_discounts(50.0, [0.20], fixed_voucher=60.0) == 0.0\n    # Negative coupon values ignored\n    assert apply_stacked_discounts(100.0, [-0.10, 0.25], fixed_voucher=5.0) == 70.0\n    # Non-positive subtotal returns 0.0\n    assert apply_stacked_discounts(0.0, [0.20], fixed_voucher=10.0) == 0.0\n\n\n# --- PR-106: Webhook retry backoff tests ---\ndef test_compute_retry_delay():\n    # Standard exponential backoff: 2 * 2^0 = 2, 2 * 2^2 = 8\n    assert compute_retry_delay(0, base_delay=2.0, max_delay=60.0, max_attempts=5) == 2.0\n    assert compute_retry_delay(2, base_delay=2.0, max_delay=60.0, max_attempts=5) == 8.0\n    # Respects retry_after_header when larger than exponential delay, capped at max_delay\n    assert compute_retry_delay(1, base_delay=2.0, max_delay=60.0, max_attempts=5, retry_after_header=15.0) == 15.0\n    assert compute_retry_delay(1, base_delay=2.0, max_delay=60.0, max_attempts=5, retry_after_header=120.0) == 60.0\n    # Capped at max_delay on high attempt\n    assert compute_retry_delay(4, base_delay=10.0, max_delay=60.0, max_attempts=5) == 60.0\n    # Exhausted attempts return -1.0\n    assert compute_retry_delay(5, base_delay=2.0, max_delay=60.0, max_attempts=5) == -1.0\n    assert compute_retry_delay(-1, base_delay=2.0, max_delay=60.0, max_attempts=5) == -1.0\n\n\n# --- PR-107: Multi-currency settlement reconciliation tests ---\ndef test_reconcile_batch_balanced_and_imbalanced():\n    entries = [\n        {\"amount\": 1000.0, \"currency\": \"NOK\", \"fx_rate_to_usd\": 0.095, \"fee_bps\": 100, \"entry_type\": \"credit\"},  # 95.00 USD, fee 0.95\n        {\"amount\": 50.0, \"currency\": \"EUR\", \"fx_rate_to_usd\": 1.10, \"fee_bps\": 200, \"entry_type\": \"credit\"},     # 55.00 USD, fee 1.10\n        {\"amount\": -20.0, \"currency\": \"USD\", \"fx_rate_to_usd\": 1.0, \"fee_bps\": 100, \"entry_type\": \"credit\"},     # skipped (<= 0)\n        {\"amount\": 150.0, \"currency\": \"USD\", \"fx_rate_to_usd\": 1.0, \"fee_bps\": 500, \"entry_type\": \"debit\"},      # 150.00 USD, fee 0.0\n    ]\n    res = reconcile_batch(entries)\n    assert res[\"total_credits_usd\"] == 150.00\n    assert res[\"total_debits_usd\"] == 150.00\n    assert res[\"total_fees_usd\"] == 2.05\n    assert res[\"net_settlement_usd\"] == -2.05\n    assert res[\"imbalance_usd\"] == 0.00\n    assert res[\"status\"] == \"BALANCED\"\n\n    imbalanced = reconcile_batch([\n        {\"amount\": 100.0, \"currency\": \"USD\", \"fx_rate_to_usd\": 1.0, \"fee_bps\": 50, \"entry_type\": \"credit\"},\n        {\"amount\": 80.0, \"currency\": \"USD\", \"fx_rate_to_usd\": 1.0, \"fee_bps\": 0, \"entry_type\": \"debit\"},\n    ])\n    assert imbalanced[\"status\"] == \"IMBALANCED\"\n    assert imbalanced[\"imbalance_usd\"] == 20.00\n    assert imbalanced[\"net_settlement_usd\"] == 19.50\n"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "I have completed the fix for `validate_invoice_ref` in `orderflow/validators.py`.\n\n### Solution Details\n1. Verified input characters and length requirements (8-12 digits).\n2. Implemented the standard Luhn Mod-10 check algorithm over all digits of `cleaned` (doubling every second digit from the right, subtracting 9 if greater than 9, and verifying that the total sum modulo 10 equals 0).\n3. Verified the implementation against `test_validate_invoice_ref_luhn`, which passed successfully.\n\n### Unified Diff\n```diff\n--- a/orderflow/validators.py\n+++ b/orderflow/validators.py\n@@ -14,5 +14,12 @@\n         return False\n     if not (8 <= len(cleaned) <= 12):\n         return False\n-    # BUG (PR-103): Missing Luhn Mod-10 check digit validation!\n-    return True\n+    total = 0\n+    for i, ch in enumerate(reversed(cleaned)):\n+        d = int(ch)\n+        if i % 2 == 1:\n+            d *= 2\n+            if d > 9:\n+                d -= 9\n+        total += d\n+    return total % 10 == 0\n```\n\n### Test Verification\nThe target test `test_validate_invoice_ref_luhn` passed with status **PASSED** (`1 passed, 5 deselected in 0.03s`)."
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "[CASE_ID=pr_105_tier_2_medium] [TARGET_FILE=orderflow/discounts.py] [PYTEST_TARGET=test_apply_stacked_discounts_caps_and_floors] [COMPLEXITY_TIER=tier_2_medium]\n\nIn `orderflow/discounts.py`, `apply_stacked_discounts` lets stacked percentage coupons exceed `max_discount_pct` and allows negative totals when `fixed_voucher` is large. Filter out negative coupons, cap total percentage at `max_discount_pct`, and clamp the final total to `>= 0.0`.\n\nUse `read_repo_file` to inspect the current file, then use `test_and_verify_patch` to verify your fix against the unit test suite, and include the final unified diff in your response."
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "The fix in `orderflow/discounts.py` filters out negative coupons, caps the combined percentage discount at `max_discount_pct`, applies any positive `fixed_voucher`, and clamps the final total at `>= 0.0`.\n\n### Unified Diff\n\n```diff\n--- a/orderflow/discounts.py\n+++ b/orderflow/discounts.py\n@@ -19,8 +19,9 @@\n     \"\"\"\n     if subtotal <= 0:\n         return 0.0\n-    # BUG (PR-104 / PR-105): Does not filter negative coupons, does not cap at max_discount_pct,\n-    # and does not floor the final total at 0.0!\n-    total_pct = sum(pct_coupons)\n-    discounted = subtotal * (1.0 - total_pct) - fixed_voucher\n-    return round(discounted, 2)\n+    valid_pct = sum(c for c in pct_coupons if c > 0.0)\n+    effective_pct = min(valid_pct, max_discount_pct)\n+    discounted = subtotal * (1.0 - effective_pct)\n+    if fixed_voucher > 0:\n+        discounted -= fixed_voucher\n+    return round(max(0.0, discounted), 2)\n```\n\n### Verification\nThe patch was verified using `test_and_verify_patch` with pytest target `test_apply_stacked_discounts_caps_and_floors`. The test passed successfully:\n```\nStatus: PASSED\nOutput: 1 passed, 5 deselected\n```"
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "reference": {
+        "response": {
+          "parts": [
+            {
+              "text": "diff --git a/orderflow/discounts.py b/orderflow/discounts.py\nindex bae60d9..335d25c 100644\n--- a/orderflow/discounts.py\n+++ b/orderflow/discounts.py\n@@ -19,8 +19,9 @@ def apply_stacked_discounts(\n     \"\"\"\n     if subtotal <= 0:\n         return 0.0\n-    # BUG (PR-104 / PR-105): Does not filter negative coupons, does not cap at max_discount_pct,\n-    # and does not floor the final total at 0.0!\n-    total_pct = sum(pct_coupons)\n-    discounted = subtotal * (1.0 - total_pct) - fixed_voucher\n-    return round(discounted, 2)\n+    total_pct = sum(c for c in pct_coupons if c > 0)\n+    total_pct = min(total_pct, max_discount_pct)\n+    discounted = subtotal * (1.0 - total_pct)\n+    if fixed_voucher > 0:\n+        discounted -= fixed_voucher\n+    return round(max(discounted, 0.0), 2)"
+            }
+          ],
+          "role": "model"
+        }
+      },
+      "eval_case_id": "pr_105_tier_2_medium",
+      "agent_data": {
+        "agents": {
+          "root_agent": {
+            "agent_id": "root_agent",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are an expert software engineering coding agent. For every task:\n1. Call `read_repo_file` on the target file mentioned in the prompt.\n2. Call `test_and_verify_patch` with the exact `old_string`, `new_string`, and `pytest_target` to verify your fix passes the unit test suite.\n3. In your final response, include the exact unified diff inside a ```diff code block and confirm the test status.",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Read the contents of a file in the target repository at the pre-PR baseline commit.\n\nArgs:\n    file_path: Relative path to the file inside the repository, e.g. 'orderflow/pricing.py'.\n\nReturns:\n    Dictionary with 'file_path' and 'content' (or 'error' if not found).",
+                    "name": "read_repo_file",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "file_path": {
+                          "title": "File Path",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "file_path"
+                      ],
+                      "title": "read_repo_fileParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Apply a proposed code edit in an isolated sandbox copy of the repo and run pytest.\n\nArgs:\n    file_path: Relative path to the file to modify, e.g. 'orderflow/pricing.py'.\n    old_string: Exact existing substring in the file to replace.\n    new_string: Replacement code string.\n    pytest_target: Optional pytest -k test function filter, e.g. 'test_calculate_tax_round_half_up'.\n\nReturns:\n    Dictionary with 'status' ('PASSED' or 'FAILED'), 'unified_diff', and 'pytest_output'.",
+                    "name": "test_and_verify_patch",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "file_path": {
+                          "title": "File Path",
+                          "type": "string"
+                        },
+                        "old_string": {
+                          "title": "Old String",
+                          "type": "string"
+                        },
+                        "new_string": {
+                          "title": "New String",
+                          "type": "string"
+                        },
+                        "pytest_target": {
+                          "default": "",
+                          "title": "Pytest Target",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "file_path",
+                        "old_string",
+                        "new_string"
+                      ],
+                      "title": "test_and_verify_patchParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_3316103",
+                        "args": {
+                          "file_path": "orderflow/discounts.py"
+                        },
+                        "name": "read_repo_file"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_3316103",
+                        "name": "read_repo_file",
+                        "response": {
+                          "file_path": "orderflow/discounts.py",
+                          "content": "\"\"\"Promotional coupon stacking and voucher calculation.\"\"\"\n\n\ndef apply_stacked_discounts(\n    subtotal: float,\n    pct_coupons: list[float],\n    fixed_voucher: float = 0.0,\n    max_discount_pct: float = 0.50,\n) -> float:\n    \"\"\"Apply stacked percentage coupons followed by a fixed voucher amount.\n\n    Business rules:\n    1. If subtotal <= 0, return 0.0.\n    2. Ignore any negative values in pct_coupons. Sum the valid percentage coupons,\n       but cap the combined percentage discount at `max_discount_pct` (default 0.50 = 50%).\n    3. Apply the capped percentage discount to `subtotal`.\n    4. Subtract `fixed_voucher` (if fixed_voucher > 0) from the discounted subtotal.\n    5. Floor the final total at 0.0 (never return a negative price) and round to 2 decimals.\n    \"\"\"\n    if subtotal <= 0:\n        return 0.0\n    # BUG (PR-104 / PR-105): Does not filter negative coupons, does not cap at max_discount_pct,\n    # and does not floor the final total at 0.0!\n    total_pct = sum(pct_coupons)\n    discounted = subtotal * (1.0 - total_pct) - fixed_voucher\n    return round(discounted, 2)\n"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_69097",
+                        "args": {
+                          "old_string": "    if subtotal <= 0:\n        return 0.0\n    # BUG (PR-104 / PR-105): Does not filter negative coupons, does not cap at max_discount_pct,\n    # and does not floor the final total at 0.0!\n    total_pct = sum(pct_coupons)\n    discounted = subtotal * (1.0 - total_pct) - fixed_voucher\n    return round(discounted, 2)",
+                          "new_string": "    if subtotal <= 0:\n        return 0.0\n    valid_pct = sum(c for c in pct_coupons if c > 0.0)\n    effective_pct = min(valid_pct, max_discount_pct)\n    discounted = subtotal * (1.0 - effective_pct)\n    if fixed_voucher > 0:\n        discounted -= fixed_voucher\n    return round(max(0.0, discounted), 2)",
+                          "file_path": "orderflow/discounts.py",
+                          "pytest_target": "test_apply_stacked_discounts_caps_and_floors"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_69097",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "PASSED",
+                          "exit_code": 0,
+                          "unified_diff": "--- a/orderflow/discounts.py\n+++ b/orderflow/discounts.py\n@@ -19,8 +19,9 @@\n     \"\"\"\n     if subtotal <= 0:\n         return 0.0\n-    # BUG (PR-104 / PR-105): Does not filter negative coupons, does not cap at max_discount_pct,\n-    # and does not floor the final total at 0.0!\n-    total_pct = sum(pct_coupons)\n-    discounted = subtotal * (1.0 - total_pct) - fixed_voucher\n-    return round(discounted, 2)\n+    valid_pct = sum(c for c in pct_coupons if c > 0.0)\n+    effective_pct = min(valid_pct, max_discount_pct)\n+    discounted = subtotal * (1.0 - effective_pct)\n+    if fixed_voucher > 0:\n+        discounted -= fixed_voucher\n+    return round(max(0.0, discounted), 2)",
+                          "pytest_output": ".                                                                        [100%]\n1 passed, 5 deselected in 0.03s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_84840",
+                        "args": {
+                          "pytest_target": "",
+                          "old_string": "    if subtotal <= 0:\n        return 0.0\n    # BUG (PR-104 / PR-105): Does not filter negative coupons, does not cap at max_discount_pct,\n    # and does not floor the final total at 0.0!\n    total_pct = sum(pct_coupons)\n    discounted = subtotal * (1.0 - total_pct) - fixed_voucher\n    return round(discounted, 2)",
+                          "file_path": "orderflow/discounts.py",
+                          "new_string": "    if subtotal <= 0:\n        return 0.0\n    valid_pct = sum(c for c in pct_coupons if c > 0.0)\n    effective_pct = min(valid_pct, max_discount_pct)\n    discounted = subtotal * (1.0 - effective_pct)\n    if fixed_voucher > 0:\n        discounted -= fixed_voucher\n    return round(max(0.0, discounted), 2)"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_84840",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "FAILED",
+                          "exit_code": 1,
+                          "unified_diff": "--- a/orderflow/discounts.py\n+++ b/orderflow/discounts.py\n@@ -19,8 +19,9 @@\n     \"\"\"\n     if subtotal <= 0:\n         return 0.0\n-    # BUG (PR-104 / PR-105): Does not filter negative coupons, does not cap at max_discount_pct,\n-    # and does not floor the final total at 0.0!\n-    total_pct = sum(pct_coupons)\n-    discounted = subtotal * (1.0 - total_pct) - fixed_voucher\n-    return round(discounted, 2)\n+    valid_pct = sum(c for c in pct_coupons if c > 0.0)\n+    effective_pct = min(valid_pct, max_discount_pct)\n+    discounted = subtotal * (1.0 - effective_pct)\n+    if fixed_voucher > 0:\n+        discounted -= fixed_voucher\n+    return round(max(0.0, discounted), 2)",
+                          "pytest_output": "FFF.FF                                                                   [100%]\n=================================== FAILURES ===================================\n_______________________ test_calculate_tax_round_half_up _______________________\n\n    def test_calculate_tax_round_half_up():\n        # 100.02 * 0.25 = 25.005 -> ROUND_HALF_UP must yield 25.01 (float round gives 25.0)\n>       assert calculate_tax(100.02, 0.25) == 25.01\nE       assert 25.0 == 25.01\nE        +  where 25.0 = calculate_tax(100.02, 0.25)\n\ntests/test_orderflow.py:13: AssertionError\n_________________________ test_round_currency_half_up __________________________\n\n    def test_round_currency_half_up():\n>       assert round_currency(2.505) == 2.51\nE       assert 2.5 == 2.51\nE        +  where 2.5 = round_currency(2.505)\n\ntests/test_orderflow.py:21: AssertionError\n________________________ test_validate_invoice_ref_luhn ________________________\n\n    def test_validate_invoice_ref_luhn():\n        # \"79927398713\" is a classic valid 11-digit Luhn number\n        assert validate_invoice_ref(\"79927398713\") is True\n        assert validate_invoice_ref(\"7992-7398-713\") is True\n        # Invalid check digit (last digit changed from 3 to 4)\n>       assert validate_invoice_ref(\"79927398714\") is False\nE       AssertionError: assert True is False\nE        +  where True = validate_invoice_ref('79927398714')\n\ntests/test_orderflow.py:32: AssertionError\n___________________________ test_compute_retry_delay __________________________"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_107218",
+                        "args": {
+                          "pytest_target": "test_apply_stacked_discounts",
+                          "old_string": "    if subtotal <= 0:\n        return 0.0\n    # BUG (PR-104 / PR-105): Does not filter negative coupons, does not cap at max_discount_pct,\n    # and does not floor the final total at 0.0!\n    total_pct = sum(pct_coupons)\n    discounted = subtotal * (1.0 - total_pct) - fixed_voucher\n    return round(discounted, 2)",
+                          "new_string": "    if subtotal <= 0:\n        return 0.0\n    valid_pct = sum(c for c in pct_coupons if c > 0.0)\n    effective_pct = min(valid_pct, max_discount_pct)\n    discounted = subtotal * (1.0 - effective_pct)\n    if fixed_voucher > 0:\n        discounted -= fixed_voucher\n    return round(max(0.0, discounted), 2)",
+                          "file_path": "orderflow/discounts.py"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_107218",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "PASSED",
+                          "exit_code": 0,
+                          "unified_diff": "--- a/orderflow/discounts.py\n+++ b/orderflow/discounts.py\n@@ -19,8 +19,9 @@\n     \"\"\"\n     if subtotal <= 0:\n         return 0.0\n-    # BUG (PR-104 / PR-105): Does not filter negative coupons, does not cap at max_discount_pct,\n-    # and does not floor the final total at 0.0!\n-    total_pct = sum(pct_coupons)\n-    discounted = subtotal * (1.0 - total_pct) - fixed_voucher\n-    return round(discounted, 2)\n+    valid_pct = sum(c for c in pct_coupons if c > 0.0)\n+    effective_pct = min(valid_pct, max_discount_pct)\n+    discounted = subtotal * (1.0 - effective_pct)\n+    if fixed_voucher > 0:\n+        discounted -= fixed_voucher\n+    return round(max(0.0, discounted), 2)",
+                          "pytest_output": ".                                                                        [100%]\n1 passed, 5 deselected in 0.04s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_52764",
+                        "args": {
+                          "file_path": "tests/test_orderflow.py"
+                        },
+                        "name": "read_repo_file"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_52764",
+                        "name": "read_repo_file",
+                        "response": {
+                          "file_path": "tests/test_orderflow.py",
+                          "content": "\"\"\"Unit test suite for orderflow.\"\"\"\n\nfrom orderflow.pricing import calculate_tax, round_currency\nfrom orderflow.validators import validate_invoice_ref\nfrom orderflow.discounts import apply_stacked_discounts\nfrom orderflow.webhooks import compute_retry_delay\nfrom orderflow.settlement import reconcile_batch\n\n\n# --- PR-101: Tax rounding tests ---\ndef test_calculate_tax_round_half_up():\n    # 100.02 * 0.25 = 25.005 -> ROUND_HALF_UP must yield 25.01 (float round gives 25.0)\n    assert calculate_tax(100.02, 0.25) == 25.01\n    # 10.02 * 0.25 = 2.505 -> ROUND_HALF_UP must yield 2.51\n    assert calculate_tax(10.02, 0.25) == 2.51\n    assert calculate_tax(200.0, 0.15) == 30.00\n\n\n# --- PR-102: Currency rounding tests ---\ndef test_round_currency_half_up():\n    assert round_currency(2.505) == 2.51\n    assert round_currency(10.005) == 10.01\n    assert round_currency(4.224) == 4.22\n\n\n# --- PR-103: Invoice reference Luhn Mod-10 validation tests ---\ndef test_validate_invoice_ref_luhn():\n    # \"79927398713\" is a classic valid 11-digit Luhn number\n    assert validate_invoice_ref(\"79927398713\") is True\n    assert validate_invoice_ref(\"7992-7398-713\") is True\n    # Invalid check digit (last digit changed from 3 to 4)\n    assert validate_invoice_ref(\"79927398714\") is False\n    assert validate_invoice_ref(\"12345678\") is False\n    # Too short (<8 digits) or non-numeric\n    assert validate_invoice_ref(\"1234567\") is False\n    assert validate_invoice_ref(\"7992739871A\") is False\n\n\n# --- PR-104 & PR-105: Stacked discounts tests ---\ndef test_apply_stacked_discounts_caps_and_floors():\n    # Two 30% coupons (60%) must be capped at default max_discount_pct=0.50 -> 50% of 200 = 100, minus 20 voucher = 80.0\n    assert apply_stacked_discounts(200.0, [0.30, 0.30], fixed_voucher=20.0) == 80.0\n    # Voucher larger than discounted subtotal must floor at 0.0\n    assert apply_stacked_discounts(50.0, [0.20], fixed_voucher=60.0) == 0.0\n    # Negative coupon values ignored\n    assert apply_stacked_discounts(100.0, [-0.10, 0.25], fixed_voucher=5.0) == 70.0\n    # Non-positive subtotal returns 0.0\n    assert apply_stacked_discounts(0.0, [0.20], fixed_voucher=10.0) == 0.0\n\n\n# --- PR-106: Webhook retry backoff tests ---\ndef test_compute_retry_delay():\n    # Standard exponential backoff: 2 * 2^0 = 2, 2 * 2^2 = 8\n    assert compute_retry_delay(0, base_delay=2.0, max_delay=60.0, max_attempts=5) == 2.0\n    assert compute_retry_delay(2, base_delay=2.0, max_delay=60.0, max_attempts=5) == 8.0\n    # Respects retry_after_header when larger than exponential delay, capped at max_delay\n    assert compute_retry_delay(1, base_delay=2.0, max_delay=60.0, max_attempts=5, retry_after_header=15.0) == 15.0\n    assert compute_retry_delay(1, base_delay=2.0, max_delay=60.0, max_attempts=5, retry_after_header=120.0) == 60.0\n    # Capped at max_delay on high attempt\n    assert compute_retry_delay(4, base_delay=10.0, max_delay=60.0, max_attempts=5) == 60.0\n    # Exhausted attempts return -1.0\n    assert compute_retry_delay(5, base_delay=2.0, max_delay=60.0, max_attempts=5) == -1.0\n    assert compute_retry_delay(-1, base_delay=2.0, max_delay=60.0, max_attempts=5) == -1.0\n\n\n# --- PR-107: Multi-currency settlement reconciliation tests ---\ndef test_reconcile_batch_balanced_and_imbalanced():\n    entries = [\n        {\"amount\": 1000.0, \"currency\": \"NOK\", \"fx_rate_to_usd\": 0.095, \"fee_bps\": 100, \"entry_type\": \"credit\"},  # 95.00 USD, fee 0.95\n        {\"amount\": 50.0, \"currency\": \"EUR\", \"fx_rate_to_usd\": 1.10, \"fee_bps\": 200, \"entry_type\": \"credit\"},     # 55.00 USD, fee 1.10\n        {\"amount\": -20.0, \"currency\": \"USD\", \"fx_rate_to_usd\": 1.0, \"fee_bps\": 100, \"entry_type\": \"credit\"},     # skipped (<= 0)\n        {\"amount\": 150.0, \"currency\": \"USD\", \"fx_rate_to_usd\": 1.0, \"fee_bps\": 500, \"entry_type\": \"debit\"},      # 150.00 USD, fee 0.0\n    ]\n    res = reconcile_batch(entries)\n    assert res[\"total_credits_usd\"] == 150.00\n    assert res[\"total_debits_usd\"] == 150.00\n    assert res[\"total_fees_usd\"] == 2.05\n    assert res[\"net_settlement_usd\"] == -2.05\n    assert res[\"imbalance_usd\"] == 0.00\n    assert res[\"status\"] == \"BALANCED\"\n\n    imbalanced = reconcile_batch([\n        {\"amount\": 100.0, \"currency\": \"USD\", \"fx_rate_to_usd\": 1.0, \"fee_bps\": 50, \"entry_type\": \"credit\"},\n        {\"amount\": 80.0, \"currency\": \"USD\", \"fx_rate_to_usd\": 1.0, \"fee_bps\": 0, \"entry_type\": \"debit\"},\n    ])\n    assert imbalanced[\"status\"] == \"IMBALANCED\"\n    assert imbalanced[\"imbalance_usd\"] == 20.00\n    assert imbalanced[\"net_settlement_usd\"] == 19.50\n"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_638235",
+                        "args": {
+                          "file_path": "orderflow/discounts.py",
+                          "old_string": "    if subtotal <= 0:\n        return 0.0\n    # BUG (PR-104 / PR-105): Does not filter negative coupons, does not cap at max_discount_pct,\n    # and does not floor the final total at 0.0!\n    total_pct = sum(pct_coupons)\n    discounted = subtotal * (1.0 - total_pct) - fixed_voucher\n    return round(discounted, 2)",
+                          "pytest_target": "test_apply_stacked_discounts_caps_and_floors",
+                          "new_string": "    if subtotal <= 0:\n        return 0.0\n    valid_pct = sum(c for c in pct_coupons if c > 0.0)\n    effective_pct = min(valid_pct, max_discount_pct)\n    discounted = subtotal * (1.0 - effective_pct)\n    if fixed_voucher > 0:\n        discounted -= fixed_voucher\n    return round(max(0.0, discounted), 2)"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_638235",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "PASSED",
+                          "exit_code": 0,
+                          "unified_diff": "--- a/orderflow/discounts.py\n+++ b/orderflow/discounts.py\n@@ -19,8 +19,9 @@\n     \"\"\"\n     if subtotal <= 0:\n         return 0.0\n-    # BUG (PR-104 / PR-105): Does not filter negative coupons, does not cap at max_discount_pct,\n-    # and does not floor the final total at 0.0!\n-    total_pct = sum(pct_coupons)\n-    discounted = subtotal * (1.0 - total_pct) - fixed_voucher\n-    return round(discounted, 2)\n+    valid_pct = sum(c for c in pct_coupons if c > 0.0)\n+    effective_pct = min(valid_pct, max_discount_pct)\n+    discounted = subtotal * (1.0 - effective_pct)\n+    if fixed_voucher > 0:\n+        discounted -= fixed_voucher\n+    return round(max(0.0, discounted), 2)",
+                          "pytest_output": ".                                                                        [100%]\n1 passed, 5 deselected in 0.03s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "The fix in `orderflow/discounts.py` filters out negative coupons, caps the combined percentage discount at `max_discount_pct`, applies any positive `fixed_voucher`, and clamps the final total at `>= 0.0`.\n\n### Unified Diff\n\n```diff\n--- a/orderflow/discounts.py\n+++ b/orderflow/discounts.py\n@@ -19,8 +19,9 @@\n     \"\"\"\n     if subtotal <= 0:\n         return 0.0\n-    # BUG (PR-104 / PR-105): Does not filter negative coupons, does not cap at max_discount_pct,\n-    # and does not floor the final total at 0.0!\n-    total_pct = sum(pct_coupons)\n-    discounted = subtotal * (1.0 - total_pct) - fixed_voucher\n-    return round(discounted, 2)\n+    valid_pct = sum(c for c in pct_coupons if c > 0.0)\n+    effective_pct = min(valid_pct, max_discount_pct)\n+    discounted = subtotal * (1.0 - effective_pct)\n+    if fixed_voucher > 0:\n+        discounted -= fixed_voucher\n+    return round(max(0.0, discounted), 2)\n```\n\n### Verification\nThe patch was verified using `test_and_verify_patch` with pytest target `test_apply_stacked_discounts_caps_and_floors`. The test passed successfully:\n```\nStatus: PASSED\nOutput: 1 passed, 5 deselected\n```"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "[CASE_ID=pr_106_tier_2_medium] [TARGET_FILE=orderflow/webhooks.py] [PYTEST_TARGET=test_compute_retry_delay] [COMPLEXITY_TIER=tier_2_medium]\n\nFix `compute_retry_delay` in `orderflow/webhooks.py`. Return `-1.0` if `attempt < 0` or `attempt >= max_attempts`. Compute `delay = base_delay * (2 ** attempt)`, if `retry_after_header` is provided and positive take `max(delay, retry_after_header)`, and cap the returned value at `max_delay`.\n\nUse `read_repo_file` to inspect the current file, then use `test_and_verify_patch` to verify your fix against the unit test suite, and include the final unified diff in your response."
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "The bug in `compute_retry_delay` in `orderflow/webhooks.py` has been resolved. The function now:\n1. Validates `attempt`: returns `-1.0` if `attempt < 0` or `attempt >= max_attempts`.\n2. Computes the base exponential backoff delay as `base_delay * (2 ** attempt)`.\n3. If `retry_after_header` is provided and positive (`> 0`), takes `max(delay, retry_after_header)`.\n4. Caps the final returned delay at `max_delay`.\n\n### Unified Diff\n\n```diff\n--- a/orderflow/webhooks.py\n+++ b/orderflow/webhooks.py\n@@ -18,5 +18,11 @@\n        `max(exponential_delay, retry_after_header)`.\n     4. Cap the returned delay at `max_delay`.\n     \"\"\"\n-    # BUG (PR-106): Does not check max_attempts, ignores retry_after_header, and forgets max_delay cap.\n-    return float(base_delay * (2 ** attempt))\n+    if attempt < 0 or attempt >= max_attempts:\n+        return -1.0\n+\n+    delay = float(base_delay * (2 ** attempt))\n+    if retry_after_header is not None and retry_after_header > 0:\n+        delay = max(delay, float(retry_after_header))\n+\n+    return float(min(delay, max_delay))\n```\n\n### Verification\nTarget test `test_compute_retry_delay` passed:\n```\n.                                                                        [100%]\n1 passed, 5 deselected in 0.04s\nSTATUS: PASSED\n```"
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "reference": {
+        "response": {
+          "parts": [
+            {
+              "text": "diff --git a/orderflow/webhooks.py b/orderflow/webhooks.py\nindex 5dc3635..1b8d0c8 100644\n--- a/orderflow/webhooks.py\n+++ b/orderflow/webhooks.py\n@@ -18,5 +18,9 @@ def compute_retry_delay(\n        `max(exponential_delay, retry_after_header)`.\n     4. Cap the returned delay at `max_delay`.\n     \"\"\"\n-    # BUG (PR-106): Does not check max_attempts, ignores retry_after_header, and forgets max_delay cap.\n-    return float(base_delay * (2 ** attempt))\n+    if attempt < 0 or attempt >= max_attempts:\n+        return -1.0\n+    delay = float(base_delay * (2 ** attempt))\n+    if retry_after_header is not None and retry_after_header > 0:\n+        delay = max(delay, float(retry_after_header))\n+    return float(min(delay, max_delay))"
+            }
+          ],
+          "role": "model"
+        }
+      },
+      "eval_case_id": "pr_106_tier_2_medium",
+      "agent_data": {
+        "agents": {
+          "root_agent": {
+            "agent_id": "root_agent",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are an expert software engineering coding agent. For every task:\n1. Call `read_repo_file` on the target file mentioned in the prompt.\n2. Call `test_and_verify_patch` with the exact `old_string`, `new_string`, and `pytest_target` to verify your fix passes the unit test suite.\n3. In your final response, include the exact unified diff inside a ```diff code block and confirm the test status.",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Read the contents of a file in the target repository at the pre-PR baseline commit.\n\nArgs:\n    file_path: Relative path to the file inside the repository, e.g. 'orderflow/pricing.py'.\n\nReturns:\n    Dictionary with 'file_path' and 'content' (or 'error' if not found).",
+                    "name": "read_repo_file",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "file_path": {
+                          "title": "File Path",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "file_path"
+                      ],
+                      "title": "read_repo_fileParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Apply a proposed code edit in an isolated sandbox copy of the repo and run pytest.\n\nArgs:\n    file_path: Relative path to the file to modify, e.g. 'orderflow/pricing.py'.\n    old_string: Exact existing substring in the file to replace.\n    new_string: Replacement code string.\n    pytest_target: Optional pytest -k test function filter, e.g. 'test_calculate_tax_round_half_up'.\n\nReturns:\n    Dictionary with 'status' ('PASSED' or 'FAILED'), 'unified_diff', and 'pytest_output'.",
+                    "name": "test_and_verify_patch",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "file_path": {
+                          "title": "File Path",
+                          "type": "string"
+                        },
+                        "old_string": {
+                          "title": "Old String",
+                          "type": "string"
+                        },
+                        "new_string": {
+                          "title": "New String",
+                          "type": "string"
+                        },
+                        "pytest_target": {
+                          "default": "",
+                          "title": "Pytest Target",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "file_path",
+                        "old_string",
+                        "new_string"
+                      ],
+                      "title": "test_and_verify_patchParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_5708672",
+                        "args": {
+                          "file_path": "orderflow/webhooks.py"
+                        },
+                        "name": "read_repo_file"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_5708672",
+                        "name": "read_repo_file",
+                        "response": {
+                          "file_path": "orderflow/webhooks.py",
+                          "content": "\"\"\"Webhook delivery retry and backoff scheduling.\"\"\"\n\n\ndef compute_retry_delay(\n    attempt: int,\n    base_delay: float = 2.0,\n    max_delay: float = 60.0,\n    max_attempts: int = 5,\n    retry_after_header: float | None = None,\n) -> float:\n    \"\"\"Compute the next retry delay in seconds for a failed webhook delivery.\n\n    Rules:\n    1. `attempt` is 0-indexed (0 is the first retry). If `attempt >= max_attempts` or `attempt < 0`,\n       return -1.0 to indicate retries are exhausted.\n    2. Standard exponential backoff is `base_delay * (2 ** attempt)`.\n    3. If `retry_after_header` is provided and positive, the delay before capping must be\n       `max(exponential_delay, retry_after_header)`.\n    4. Cap the returned delay at `max_delay`.\n    \"\"\"\n    # BUG (PR-106): Does not check max_attempts, ignores retry_after_header, and forgets max_delay cap.\n    return float(base_delay * (2 ** attempt))\n"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_726215",
+                        "args": {
+                          "new_string": "    if attempt < 0 or attempt >= max_attempts:\n        return -1.0\n\n    delay = float(base_delay * (2 ** attempt))\n    if retry_after_header is not None and retry_after_header > 0:\n        delay = max(delay, float(retry_after_header))\n\n    return float(min(delay, max_delay))",
+                          "pytest_target": "test_compute_retry_delay",
+                          "old_string": "    # BUG (PR-106): Does not check max_attempts, ignores retry_after_header, and forgets max_delay cap.\n    return float(base_delay * (2 ** attempt))",
+                          "file_path": "orderflow/webhooks.py"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_726215",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "PASSED",
+                          "exit_code": 0,
+                          "unified_diff": "--- a/orderflow/webhooks.py\n+++ b/orderflow/webhooks.py\n@@ -18,5 +18,11 @@\n        `max(exponential_delay, retry_after_header)`.\n     4. Cap the returned delay at `max_delay`.\n     \"\"\"\n-    # BUG (PR-106): Does not check max_attempts, ignores retry_after_header, and forgets max_delay cap.\n-    return float(base_delay * (2 ** attempt))\n+    if attempt < 0 or attempt >= max_attempts:\n+        return -1.0\n+\n+    delay = float(base_delay * (2 ** attempt))\n+    if retry_after_header is not None and retry_after_header > 0:\n+        delay = max(delay, float(retry_after_header))\n+\n+    return float(min(delay, max_delay))",
+                          "pytest_output": ".                                                                        [100%]\n1 passed, 5 deselected in 0.03s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_13781",
+                        "args": {
+                          "file_path": "orderflow/webhooks.py",
+                          "old_string": "    # BUG (PR-106): Does not check max_attempts, ignores retry_after_header, and forgets max_delay cap.\n    return float(base_delay * (2 ** attempt))",
+                          "new_string": "    if attempt < 0 or attempt >= max_attempts:\n        return -1.0\n\n    delay = float(base_delay * (2 ** attempt))\n    if retry_after_header is not None and retry_after_header > 0:\n        delay = max(delay, float(retry_after_header))\n\n    return float(min(delay, max_delay))",
+                          "pytest_target": ""
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_13781",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "FAILED",
+                          "exit_code": 1,
+                          "unified_diff": "--- a/orderflow/webhooks.py\n+++ b/orderflow/webhooks.py\n@@ -18,5 +18,11 @@\n        `max(exponential_delay, retry_after_header)`.\n     4. Cap the returned delay at `max_delay`.\n     \"\"\"\n-    # BUG (PR-106): Does not check max_attempts, ignores retry_after_header, and forgets max_delay cap.\n-    return float(base_delay * (2 ** attempt))\n+    if attempt < 0 or attempt >= max_attempts:\n+        return -1.0\n+\n+    delay = float(base_delay * (2 ** attempt))\n+    if retry_after_header is not None and retry_after_header > 0:\n+        delay = max(delay, float(retry_after_header))\n+\n+    return float(min(delay, max_delay))",
+                          "pytest_output": "FFFF.F                                                                   [100%]\n=================================== FAILURES ===================================\n_______________________ test_calculate_tax_round_half_up _______________________\n\n    def test_calculate_tax_round_half_up():\n        # 100.02 * 0.25 = 25.005 -> ROUND_HALF_UP must yield 25.01 (float round gives 25.0)\n>       assert calculate_tax(100.02, 0.25) == 25.01\nE       assert 25.0 == 25.01\nE        +  where 25.0 = calculate_tax(100.02, 0.25)\n\ntests/test_orderflow.py:13: AssertionError\n_________________________ test_round_currency_half_up __________________________\n\n    def test_round_currency_half_up():\n>       assert round_currency(2.505) == 2.51\nE       assert 2.5 == 2.51\nE        +  where 2.5 = round_currency(2.505)\n\ntests/test_orderflow.py:21: AssertionError\n________________________ test_validate_invoice_ref_luhn ________________________\n\n    def test_validate_invoice_ref_luhn():\n        # \"79927398713\" is a classic valid 11-digit Luhn number\n        assert validate_invoice_ref(\"79927398713\") is True\n        assert validate_invoice_ref(\"7992-7398-713\") is True\n        # Invalid check digit (last digit changed from 3 to 4)\n>       assert validate_invoice_ref(\"79927398714\") is False\nE       AssertionError: assert True is False\nE        +  where True = validate_invoice_ref('79927398714')\n\ntests/test_orderflow.py:32: AssertionError\n_________________ test_apply_stacked_discounts_caps_and_floors ________________"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_685008",
+                        "args": {
+                          "file_path": "orderflow/webhooks.py",
+                          "new_string": "    if attempt < 0 or attempt >= max_attempts:\n        return -1.0\n\n    delay = float(base_delay * (2 ** attempt))\n    if retry_after_header is not None and retry_after_header > 0:\n        delay = max(delay, float(retry_after_header))\n\n    return float(min(delay, max_delay))",
+                          "old_string": "    # BUG (PR-106): Does not check max_attempts, ignores retry_after_header, and forgets max_delay cap.\n    return float(base_delay * (2 ** attempt))",
+                          "pytest_target": "test_compute_retry_delay"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_685008",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "PASSED",
+                          "exit_code": 0,
+                          "unified_diff": "--- a/orderflow/webhooks.py\n+++ b/orderflow/webhooks.py\n@@ -18,5 +18,11 @@\n        `max(exponential_delay, retry_after_header)`.\n     4. Cap the returned delay at `max_delay`.\n     \"\"\"\n-    # BUG (PR-106): Does not check max_attempts, ignores retry_after_header, and forgets max_delay cap.\n-    return float(base_delay * (2 ** attempt))\n+    if attempt < 0 or attempt >= max_attempts:\n+        return -1.0\n+\n+    delay = float(base_delay * (2 ** attempt))\n+    if retry_after_header is not None and retry_after_header > 0:\n+        delay = max(delay, float(retry_after_header))\n+\n+    return float(min(delay, max_delay))",
+                          "pytest_output": ".                                                                        [100%]\n1 passed, 5 deselected in 0.04s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "The bug in `compute_retry_delay` in `orderflow/webhooks.py` has been resolved. The function now:\n1. Validates `attempt`: returns `-1.0` if `attempt < 0` or `attempt >= max_attempts`.\n2. Computes the base exponential backoff delay as `base_delay * (2 ** attempt)`.\n3. If `retry_after_header` is provided and positive (`> 0`), takes `max(delay, retry_after_header)`.\n4. Caps the final returned delay at `max_delay`.\n\n### Unified Diff\n\n```diff\n--- a/orderflow/webhooks.py\n+++ b/orderflow/webhooks.py\n@@ -18,5 +18,11 @@\n        `max(exponential_delay, retry_after_header)`.\n     4. Cap the returned delay at `max_delay`.\n     \"\"\"\n-    # BUG (PR-106): Does not check max_attempts, ignores retry_after_header, and forgets max_delay cap.\n-    return float(base_delay * (2 ** attempt))\n+    if attempt < 0 or attempt >= max_attempts:\n+        return -1.0\n+\n+    delay = float(base_delay * (2 ** attempt))\n+    if retry_after_header is not None and retry_after_header > 0:\n+        delay = max(delay, float(retry_after_header))\n+\n+    return float(min(delay, max_delay))\n```\n\n### Verification\nTarget test `test_compute_retry_delay` passed:\n```\n.                                                                        [100%]\n1 passed, 5 deselected in 0.04s\nSTATUS: PASSED\n```"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "[CASE_ID=pr_107_tier_3_complex] [TARGET_FILE=orderflow/settlement.py] [PYTEST_TARGET=test_reconcile_batch_balanced_and_imbalanced] [COMPLEXITY_TIER=tier_3_complex]\n\nImplement `reconcile_batch` in `orderflow/settlement.py` according to its docstring specification: skip entries with `amount <= 0`, convert each entry to USD via `round(amount * fx_rate_to_usd, 2)`, accumulate credits and debits separately, apply `fee_bps` (`round(usd_amount * (fee_bps / 10000.0), 2)`) ONLY to credit entries, compute `net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)`, `imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)`, and set `status` to `'BALANCED'` if `imbalance_usd < 0.01` else `'IMBALANCED'`.\n\nUse `read_repo_file` to inspect the current file, then use `test_and_verify_patch` to verify your fix against the unit test suite, and include the final unified diff in your response."
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "The implementation of `reconcile_batch` in `orderflow/settlement.py` has been updated to follow the specification:\n- Entries with `amount <= 0` are skipped.\n- Valid amounts are converted to USD using `round(amount * fx_rate_to_usd, 2)`.\n- Credits and debits are accumulated separately.\n- Basis points fee `round(usd_amount * (fee_bps / 10000.0), 2)` is applied strictly to `\"credit\"` entries.\n- Intermediate and final amounts (`total_credits_usd`, `total_debits_usd`, `total_fees_usd`, `net_settlement_usd`, `imbalance_usd`) are rounded to 2 decimal places.\n- The status is set to `'BALANCED'` when `imbalance_usd < 0.01`, otherwise `'IMBALANCED'`.\n\n### Unified Diff\n```diff\n--- a/orderflow/settlement.py\n+++ b/orderflow/settlement.py\n@@ -30,13 +30,38 @@\n     Returns dict with keys:\n       total_credits_usd, total_debits_usd, total_fees_usd, net_settlement_usd, imbalance_usd, status\n     \"\"\"\n-    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n-    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n+    total_credits_usd = 0.0\n+    total_debits_usd = 0.0\n+    total_fees_usd = 0.0\n+\n+    for entry in entries:\n+        amount = entry.get(\"amount\", 0.0)\n+        if amount <= 0:\n+            continue\n+        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n+        usd_amount = round(amount * fx_rate, 2)\n+        entry_type = entry.get(\"entry_type\")\n+        if entry_type == \"credit\":\n+            total_credits_usd += usd_amount\n+            fee_bps = entry.get(\"fee_bps\", 0.0)\n+            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n+            total_fees_usd += entry_fee\n+        elif entry_type == \"debit\":\n+            total_debits_usd += usd_amount\n+\n+    total_credits_usd = round(total_credits_usd, 2)\n+    total_debits_usd = round(total_debits_usd, 2)\n+    total_fees_usd = round(total_fees_usd, 2)\n+\n+    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n+    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n+    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n+\n     return {\n-        \"total_credits_usd\": total,\n-        \"total_debits_usd\": 0.0,\n-        \"total_fees_usd\": 0.0,\n-        \"net_settlement_usd\": total,\n-        \"imbalance_usd\": total,\n-        \"status\": \"IMBALANCED\",\n+        \"total_credits_usd\": total_credits_usd,\n+        \"total_debits_usd\": total_debits_usd,\n+        \"total_fees_usd\": total_fees_usd,\n+        \"net_settlement_usd\": net_settlement_usd,\n+        \"imbalance_usd\": imbalance_usd,\n+        \"status\": status,\n     }\n```\n\n### Verification\nThe test `test_reconcile_batch_balanced_and_imbalanced` was run via `test_and_verify_patch` and passed with status **PASSED** (1 passed, 5 deselected)."
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "reference": {
+        "response": {
+          "parts": [
+            {
+              "text": "diff --git a/orderflow/settlement.py b/orderflow/settlement.py\nindex bee1692..622a3ed 100644\n--- a/orderflow/settlement.py\n+++ b/orderflow/settlement.py\n@@ -30,13 +30,35 @@ def reconcile_batch(entries: list[dict[str, Any]]) -> dict[str, Any]:\n     Returns dict with keys:\n       total_credits_usd, total_debits_usd, total_fees_usd, net_settlement_usd, imbalance_usd, status\n     \"\"\"\n-    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n-    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n+    total_credits_usd = 0.0\n+    total_debits_usd = 0.0\n+    total_fees_usd = 0.0\n+\n+    for entry in entries:\n+        amount = float(entry.get(\"amount\", 0.0))\n+        if amount <= 0:\n+            continue\n+        fx_rate = float(entry.get(\"fx_rate_to_usd\", 1.0))\n+        usd_amount = round(amount * fx_rate, 2)\n+        entry_type = entry.get(\"entry_type\", \"\")\n+\n+        if entry_type == \"credit\":\n+            total_credits_usd = round(total_credits_usd + usd_amount, 2)\n+            fee_bps = float(entry.get(\"fee_bps\", 0.0))\n+            fee_usd = round(usd_amount * (fee_bps / 10000.0), 2)\n+            total_fees_usd = round(total_fees_usd + fee_usd, 2)\n+        elif entry_type == \"debit\":\n+            total_debits_usd = round(total_debits_usd + usd_amount, 2)\n+\n+    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n+    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n+    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n+\n     return {\n-        \"total_credits_usd\": total,\n-        \"total_debits_usd\": 0.0,\n-        \"total_fees_usd\": 0.0,\n-        \"net_settlement_usd\": total,\n-        \"imbalance_usd\": total,\n-        \"status\": \"IMBALANCED\",\n+        \"total_credits_usd\": total_credits_usd,\n+        \"total_debits_usd\": total_debits_usd,\n+        \"total_fees_usd\": total_fees_usd,\n+        \"net_settlement_usd\": net_settlement_usd,\n+        \"imbalance_usd\": imbalance_usd,\n+        \"status\": status,\n     }"
+            }
+          ],
+          "role": "model"
+        }
+      },
+      "eval_case_id": "pr_107_tier_3_complex",
+      "agent_data": {
+        "agents": {
+          "root_agent": {
+            "agent_id": "root_agent",
+            "agent_type": "LlmAgent",
+            "description": "",
+            "instruction": "You are an expert software engineering coding agent. For every task:\n1. Call `read_repo_file` on the target file mentioned in the prompt.\n2. Call `test_and_verify_patch` with the exact `old_string`, `new_string`, and `pytest_target` to verify your fix passes the unit test suite.\n3. In your final response, include the exact unified diff inside a ```diff code block and confirm the test status.",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Read the contents of a file in the target repository at the pre-PR baseline commit.\n\nArgs:\n    file_path: Relative path to the file inside the repository, e.g. 'orderflow/pricing.py'.\n\nReturns:\n    Dictionary with 'file_path' and 'content' (or 'error' if not found).",
+                    "name": "read_repo_file",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "file_path": {
+                          "title": "File Path",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "file_path"
+                      ],
+                      "title": "read_repo_fileParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Apply a proposed code edit in an isolated sandbox copy of the repo and run pytest.\n\nArgs:\n    file_path: Relative path to the file to modify, e.g. 'orderflow/pricing.py'.\n    old_string: Exact existing substring in the file to replace.\n    new_string: Replacement code string.\n    pytest_target: Optional pytest -k test function filter, e.g. 'test_calculate_tax_round_half_up'.\n\nReturns:\n    Dictionary with 'status' ('PASSED' or 'FAILED'), 'unified_diff', and 'pytest_output'.",
+                    "name": "test_and_verify_patch",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "file_path": {
+                          "title": "File Path",
+                          "type": "string"
+                        },
+                        "old_string": {
+                          "title": "Old String",
+                          "type": "string"
+                        },
+                        "new_string": {
+                          "title": "New String",
+                          "type": "string"
+                        },
+                        "pytest_target": {
+                          "default": "",
+                          "title": "Pytest Target",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "file_path",
+                        "old_string",
+                        "new_string"
+                      ],
+                      "title": "test_and_verify_patchParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_1016807",
+                        "args": {
+                          "file_path": "orderflow/settlement.py"
+                        },
+                        "name": "read_repo_file"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_1016807",
+                        "name": "read_repo_file",
+                        "response": {
+                          "file_path": "orderflow/settlement.py",
+                          "content": "\"\"\"Multi-currency ledger settlement and reconciliation engine.\"\"\"\n\nfrom typing import Any\n\n\ndef reconcile_batch(entries: list[dict[str, Any]]) -> dict[str, Any]:\n    \"\"\"Reconcile a batch of multi-currency ledger entries into USD.\n\n    Each entry dict contains:\n      - \"amount\": float (must be > 0; skip entries with amount <= 0)\n      - \"currency\": str (e.g. \"USD\", \"EUR\", \"NOK\")\n      - \"fx_rate_to_usd\": float (multiplier to convert `amount` to USD)\n      - \"fee_bps\": int | float (basis points fee, e.g. 150 = 1.50%, applied ONLY to \"credit\" entries)\n      - \"entry_type\": str (\"credit\" or \"debit\")\n\n    Calculation rules:\n    1. Skip any entry where `amount <= 0`.\n    2. For each valid entry, `usd_amount = round(amount * fx_rate_to_usd, 2)`.\n    3. If `entry_type == \"credit\"`:\n         - add `usd_amount` to `total_credits_usd`\n         - compute `entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)` and add to `total_fees_usd`\n       If `entry_type == \"debit\"`:\n         - add `usd_amount` to `total_debits_usd`\n         - debits incur 0 fee.\n    4. Round `total_credits_usd`, `total_debits_usd`, and `total_fees_usd` to 2 decimals.\n    5. `net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)`\n    6. `imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)`\n    7. `status = \"BALANCED\"` if `imbalance_usd < 0.01` else `\"IMBALANCED\"`.\n\n    Returns dict with keys:\n      total_credits_usd, total_debits_usd, total_fees_usd, net_settlement_usd, imbalance_usd, status\n    \"\"\"\n    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n    return {\n        \"total_credits_usd\": total,\n        \"total_debits_usd\": 0.0,\n        \"total_fees_usd\": 0.0,\n        \"net_settlement_usd\": total,\n        \"imbalance_usd\": total,\n        \"status\": \"IMBALANCED\",\n    }\n"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_123739",
+                        "args": {
+                          "pytest_target": "test_reconcile_batch_balanced_and_imbalanced",
+                          "file_path": "orderflow/settlement.py",
+                          "new_string": "    total_credits_usd = 0.0\n    total_debits_usd = 0.0\n    total_fees_usd = 0.0\n\n    for entry in entries:\n        amount = entry.get(\"amount\", 0.0)\n        if amount <= 0:\n            continue\n        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n        usd_amount = round(amount * fx_rate, 2)\n        entry_type = entry.get(\"entry_type\")\n        if entry_type == \"credit\":\n            total_credits_usd += usd_amount\n            fee_bps = entry.get(\"fee_bps\", 0.0)\n            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n            total_fees_usd += entry_fee\n        elif entry_type == \"debit\":\n            total_debits_usd += usd_amount\n\n    total_credits_usd = round(total_credits_usd, 2)\n    total_debits_usd = round(total_debits_usd, 2)\n    total_fees_usd = round(total_fees_usd, 2)\n\n    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n\n    return {\n        \"total_credits_usd\": total_credits_usd,\n        \"total_debits_usd\": total_debits_usd,\n        \"total_fees_usd\": total_fees_usd,\n        \"net_settlement_usd\": net_settlement_usd,\n        \"imbalance_usd\": imbalance_usd,\n        \"status\": status,\n    }",
+                          "old_string": "    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n    return {\n        \"total_credits_usd\": total,\n        \"total_debits_usd\": 0.0,\n        \"total_fees_usd\": 0.0,\n        \"net_settlement_usd\": total,\n        \"imbalance_usd\": total,\n        \"status\": \"IMBALANCED\",\n    }"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_123739",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "PASSED",
+                          "exit_code": 0,
+                          "unified_diff": "--- a/orderflow/settlement.py\n+++ b/orderflow/settlement.py\n@@ -30,13 +30,38 @@\n     Returns dict with keys:\n       total_credits_usd, total_debits_usd, total_fees_usd, net_settlement_usd, imbalance_usd, status\n     \"\"\"\n-    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n-    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n+    total_credits_usd = 0.0\n+    total_debits_usd = 0.0\n+    total_fees_usd = 0.0\n+\n+    for entry in entries:\n+        amount = entry.get(\"amount\", 0.0)\n+        if amount <= 0:\n+            continue\n+        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n+        usd_amount = round(amount * fx_rate, 2)\n+        entry_type = entry.get(\"entry_type\")\n+        if entry_type == \"credit\":\n+            total_credits_usd += usd_amount\n+            fee_bps = entry.get(\"fee_bps\", 0.0)\n+            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n+            total_fees_usd += entry_fee\n+        elif entry_type == \"debit\":\n+            total_debits_usd += usd_amount\n+\n+    total_credits_usd = round(total_credits_usd, 2)\n+    total_debits_usd = round(total_debits_usd, 2)\n+    total_fees_usd = round(total_fees_usd, 2)\n+\n+    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n+    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n+    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n+\n     return {\n-        \"total_credits_usd\": total,\n-        \"total_debits_usd\": 0.0,\n-        \"total_fees_usd\": 0.0,\n-        \"net_settlement_usd\": total,\n-        \"imbalance_usd\": total,\n-        \"status\": \"IMBALANCED\",\n+        \"total_credits_usd\": total_credits_usd,\n+        \"total_debits_usd\": total_debits_usd,\n+        \"total_fees_usd\": total_fees_usd,\n+        \"net_settlement_usd\": net_settlement_usd,\n+        \"imbalance_usd\": imbalance_usd,\n+        \"status\": status,\n     }",
+                          "pytest_output": ".                                                                        [100%]\n1 passed, 5 deselected in 0.03s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_823634",
+                        "args": {
+                          "pytest_target": "settlement",
+                          "file_path": "orderflow/settlement.py",
+                          "new_string": "    total_credits_usd = 0.0\n    total_debits_usd = 0.0\n    total_fees_usd = 0.0\n\n    for entry in entries:\n        amount = entry.get(\"amount\", 0.0)\n        if amount <= 0:\n            continue\n        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n        usd_amount = round(amount * fx_rate, 2)\n        entry_type = entry.get(\"entry_type\")\n        if entry_type == \"credit\":\n            total_credits_usd += usd_amount\n            fee_bps = entry.get(\"fee_bps\", 0.0)\n            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n            total_fees_usd += entry_fee\n        elif entry_type == \"debit\":\n            total_debits_usd += usd_amount\n\n    total_credits_usd = round(total_credits_usd, 2)\n    total_debits_usd = round(total_debits_usd, 2)\n    total_fees_usd = round(total_fees_usd, 2)\n\n    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n\n    return {\n        \"total_credits_usd\": total_credits_usd,\n        \"total_debits_usd\": total_debits_usd,\n        \"total_fees_usd\": total_fees_usd,\n        \"net_settlement_usd\": net_settlement_usd,\n        \"imbalance_usd\": imbalance_usd,\n        \"status\": status,\n     }",
+                          "old_string": "    total_credits_usd = 0.0\n    total_debits_usd = 0.0\n    total_fees_usd = 0.0\n\n    for entry in entries:\n        amount = entry.get(\"amount\", 0.0)\n        if amount <= 0:\n            continue\n        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n        usd_amount = round(amount * fx_rate, 2)\n        entry_type = entry.get(\"entry_type\")\n        if entry_type == \"credit\":\n            total_credits_usd += usd_amount\n            fee_bps = entry.get(\"fee_bps\", 0.0)\n            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n            total_fees_usd += entry_fee\n        elif entry_type == \"debit\":\n            total_debits_usd += usd_amount\n\n    total_credits_usd = round(total_credits_usd, 2)\n    total_debits_usd = round(total_debits_usd, 2)\n    total_fees_usd = round(total_fees_usd, 2)\n\n    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n\n    return {\n        \"total_credits_usd\": total_credits_usd,\n        \"total_debits_usd\": total_debits_usd,\n        \"total_fees_usd\": total_fees_usd,\n        \"net_settlement_usd\": net_settlement_usd,\n        \"imbalance_usd\": imbalance_usd,\n        \"status\": status,\n    }"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_823634",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "ERROR",
+                          "error": "old_string not found in target file. Read the file first and match exact indentation."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_4163768",
+                        "args": {
+                          "new_string": "    total_credits_usd = 0.0\n    total_debits_usd = 0.0\n    total_fees_usd = 0.0\n\n    for entry in entries:\n        amount = entry.get(\"amount\", 0.0)\n        if amount <= 0:\n            continue\n        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n        usd_amount = round(amount * fx_rate, 2)\n        entry_type = entry.get(\"entry_type\")\n        if entry_type == \"credit\":\n            total_credits_usd += usd_amount\n            fee_bps = entry.get(\"fee_bps\", 0.0)\n            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n            total_fees_usd += entry_fee\n        elif entry_type == \"debit\":\n            total_debits_usd += usd_amount\n\n    total_credits_usd = round(total_credits_usd, 2)\n    total_debits_usd = round(total_debits_usd, 2)\n    total_fees_usd = round(total_fees_usd, 2)\n\n    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n\n    return {\n        \"total_credits_usd\": total_credits_usd,\n        \"total_debits_usd\": total_debits_usd,\n        \"total_fees_usd\": total_fees_usd,\n        \"net_settlement_usd\": net_settlement_usd,\n        \"imbalance_usd\": imbalance_usd,\n        \"status\": status,\n    }",
+                          "old_string": "    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n    return {\n        \"total_credits_usd\": total,\n        \"total_debits_usd\": 0.0,\n        \"total_fees_usd\": 0.0,\n        \"net_settlement_usd\": total,\n        \"imbalance_usd\": total,\n        \"status\": \"IMBALANCED\",\n    }",
+                          "pytest_target": "settlement",
+                          "file_path": "orderflow/settlement.py"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_4163768",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "FAILED",
+                          "exit_code": 5,
+                          "unified_diff": "--- a/orderflow/settlement.py\n+++ b/orderflow/settlement.py\n@@ -30,13 +30,38 @@\n     Returns dict with keys:\n       total_credits_usd, total_debits_usd, total_fees_usd, net_settlement_usd, imbalance_usd, status\n     \"\"\"\n-    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n-    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n+    total_credits_usd = 0.0\n+    total_debits_usd = 0.0\n+    total_fees_usd = 0.0\n+\n+    for entry in entries:\n+        amount = entry.get(\"amount\", 0.0)\n+        if amount <= 0:\n+            continue\n+        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n+        usd_amount = round(amount * fx_rate, 2)\n+        entry_type = entry.get(\"entry_type\")\n+        if entry_type == \"credit\":\n+            total_credits_usd += usd_amount\n+            fee_bps = entry.get(\"fee_bps\", 0.0)\n+            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n+            total_fees_usd += entry_fee\n+        elif entry_type == \"debit\":\n+            total_debits_usd += usd_amount\n+\n+    total_credits_usd = round(total_credits_usd, 2)\n+    total_debits_usd = round(total_debits_usd, 2)\n+    total_fees_usd = round(total_fees_usd, 2)\n+\n+    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n+    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n+    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n+\n     return {\n-        \"total_credits_usd\": total,\n-        \"total_debits_usd\": 0.0,\n-        \"total_fees_usd\": 0.0,\n-        \"net_settlement_usd\": total,\n-        \"imbalance_usd\": total,\n-        \"status\": \"IMBALANCED\",\n+        \"total_credits_usd\": total_credits_usd,\n+        \"total_debits_usd\": total_debits_usd,\n+        \"total_fees_usd\": total_fees_usd,\n+        \"net_settlement_usd\": net_settlement_usd,\n+        \"imbalance_usd\": imbalance_usd,\n+        \"status\": status,\n     }",
+                          "pytest_output": "6 deselected in 0.04s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_85148",
+                        "args": {
+                          "pytest_target": "reconcile",
+                          "new_string": "    total_credits_usd = 0.0\n    total_debits_usd = 0.0\n    total_fees_usd = 0.0\n\n    for entry in entries:\n        amount = entry.get(\"amount\", 0.0)\n        if amount <= 0:\n            continue\n        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n        usd_amount = round(amount * fx_rate, 2)\n        entry_type = entry.get(\"entry_type\")\n        if entry_type == \"credit\":\n            total_credits_usd += usd_amount\n            fee_bps = entry.get(\"fee_bps\", 0.0)\n            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n            total_fees_usd += entry_fee\n        elif entry_type == \"debit\":\n            total_debits_usd += usd_amount\n\n    total_credits_usd = round(total_credits_usd, 2)\n    total_debits_usd = round(total_debits_usd, 2)\n    total_fees_usd = round(total_fees_usd, 2)\n\n    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n\n    return {\n        \"total_credits_usd\": total_credits_usd,\n        \"total_debits_usd\": total_debits_usd,\n        \"total_fees_usd\": total_fees_usd,\n        \"net_settlement_usd\": net_settlement_usd,\n        \"imbalance_usd\": imbalance_usd,\n        \"status\": status,\n    }",
+                          "old_string": "    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n    return {\n        \"total_credits_usd\": total,\n        \"total_debits_usd\": 0.0,\n        \"total_fees_usd\": 0.0,\n        \"net_settlement_usd\": total,\n        \"imbalance_usd\": total,\n        \"status\": \"IMBALANCED\",\n     }",
+                          "file_path": "orderflow/settlement.py"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_85148",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "ERROR",
+                          "error": "old_string not found in target file. Read the file first and match exact indentation."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_3575807",
+                        "args": {
+                          "new_string": "    total_credits_usd = 0.0\n    total_debits_usd = 0.0\n    total_fees_usd = 0.0\n\n    for entry in entries:\n        amount = entry.get(\"amount\", 0.0)\n        if amount <= 0:\n            continue\n        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n        usd_amount = round(amount * fx_rate, 2)\n        entry_type = entry.get(\"entry_type\")\n        if entry_type == \"credit\":\n            total_credits_usd += usd_amount\n            fee_bps = entry.get(\"fee_bps\", 0.0)\n            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n            total_fees_usd += entry_fee\n        elif entry_type == \"debit\":\n            total_debits_usd += usd_amount\n\n    total_credits_usd = round(total_credits_usd, 2)\n    total_debits_usd = round(total_debits_usd, 2)\n    total_fees_usd = round(total_fees_usd, 2)\n\n    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n\n    return {\n        \"total_credits_usd\": total_credits_usd,\n        \"total_debits_usd\": total_debits_usd,\n        \"total_fees_usd\": total_fees_usd,\n        \"net_settlement_usd\": net_settlement_usd,\n        \"imbalance_usd\": imbalance_usd,\n        \"status\": status,\n    }",
+                          "file_path": "orderflow/settlement.py",
+                          "pytest_target": "reconcile",
+                          "old_string": "    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n    return {\n        \"total_credits_usd\": total,\n        \"total_debits_usd\": 0.0,\n        \"total_fees_usd\": 0.0,\n        \"net_settlement_usd\": total,\n        \"imbalance_usd\": total,\n        \"status\": \"IMBALANCED\",\n    }"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_3575807",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "PASSED",
+                          "exit_code": 0,
+                          "unified_diff": "--- a/orderflow/settlement.py\n+++ b/orderflow/settlement.py\n@@ -30,13 +30,38 @@\n     Returns dict with keys:\n       total_credits_usd, total_debits_usd, total_fees_usd, net_settlement_usd, imbalance_usd, status\n     \"\"\"\n-    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n-    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n+    total_credits_usd = 0.0\n+    total_debits_usd = 0.0\n+    total_fees_usd = 0.0\n+\n+    for entry in entries:\n+        amount = entry.get(\"amount\", 0.0)\n+        if amount <= 0:\n+            continue\n+        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n+        usd_amount = round(amount * fx_rate, 2)\n+        entry_type = entry.get(\"entry_type\")\n+        if entry_type == \"credit\":\n+            total_credits_usd += usd_amount\n+            fee_bps = entry.get(\"fee_bps\", 0.0)\n+            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n+            total_fees_usd += entry_fee\n+        elif entry_type == \"debit\":\n+            total_debits_usd += usd_amount\n+\n+    total_credits_usd = round(total_credits_usd, 2)\n+    total_debits_usd = round(total_debits_usd, 2)\n+    total_fees_usd = round(total_fees_usd, 2)\n+\n+    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n+    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n+    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n+\n     return {\n-        \"total_credits_usd\": total,\n-        \"total_debits_usd\": 0.0,\n-        \"total_fees_usd\": 0.0,\n-        \"net_settlement_usd\": total,\n-        \"imbalance_usd\": total,\n-        \"status\": \"IMBALANCED\",\n+        \"total_credits_usd\": total_credits_usd,\n+        \"total_debits_usd\": total_debits_usd,\n+        \"total_fees_usd\": total_fees_usd,\n+        \"net_settlement_usd\": net_settlement_usd,\n+        \"imbalance_usd\": imbalance_usd,\n+        \"status\": status,\n     }",
+                          "pytest_output": ".                                                                        [100%]\n1 passed, 5 deselected in 0.03s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_116667",
+                        "args": {
+                          "file_path": "orderflow/settlement.py",
+                          "old_string": "    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n    return {\n        \"total_credits_usd\": total,\n        \"total_debits_usd\": 0.0,\n        \"total_fees_usd\": 0.0,\n        \"net_settlement_usd\": total,\n        \"imbalance_usd\": total,\n        \"status\": \"IMBALANCED\",\n    }",
+                          "new_string": "    total_credits_usd = 0.0\n    total_debits_usd = 0.0\n    total_fees_usd = 0.0\n\n    for entry in entries:\n        amount = entry.get(\"amount\", 0.0)\n        if amount <= 0:\n            continue\n        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n        usd_amount = round(amount * fx_rate, 2)\n        entry_type = entry.get(\"entry_type\")\n        if entry_type == \"credit\":\n            total_credits_usd += usd_amount\n            fee_bps = entry.get(\"fee_bps\", 0.0)\n            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n            total_fees_usd += entry_fee\n        elif entry_type == \"debit\":\n            total_debits_usd += usd_amount\n\n    total_credits_usd = round(total_credits_usd, 2)\n    total_debits_usd = round(total_debits_usd, 2)\n    total_fees_usd = round(total_fees_usd, 2)\n\n    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n\n    return {\n        \"total_credits_usd\": total_credits_usd,\n        \"total_debits_usd\": total_debits_usd,\n        \"total_fees_usd\": total_fees_usd,\n        \"net_settlement_usd\": net_settlement_usd,\n        \"imbalance_usd\": imbalance_usd,\n        \"status\": status,\n    }",
+                          "pytest_target": ""
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_116667",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "FAILED",
+                          "exit_code": 1,
+                          "unified_diff": "--- a/orderflow/settlement.py\n+++ b/orderflow/settlement.py\n@@ -30,13 +30,38 @@\n     Returns dict with keys:\n       total_credits_usd, total_debits_usd, total_fees_usd, net_settlement_usd, imbalance_usd, status\n     \"\"\"\n-    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n-    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n+    total_credits_usd = 0.0\n+    total_debits_usd = 0.0\n+    total_fees_usd = 0.0\n+\n+    for entry in entries:\n+        amount = entry.get(\"amount\", 0.0)\n+        if amount <= 0:\n+            continue\n+        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n+        usd_amount = round(amount * fx_rate, 2)\n+        entry_type = entry.get(\"entry_type\")\n+        if entry_type == \"credit\":\n+            total_credits_usd += usd_amount\n+            fee_bps = entry.get(\"fee_bps\", 0.0)\n+            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n+            total_fees_usd += entry_fee\n+        elif entry_type == \"debit\":\n+            total_debits_usd += usd_amount\n+\n+    total_credits_usd = round(total_credits_usd, 2)\n+    total_debits_usd = round(total_debits_usd, 2)\n+    total_fees_usd = round(total_fees_usd, 2)\n+\n+    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n+    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n+    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n+\n     return {\n-        \"total_credits_usd\": total,\n-        \"total_debits_usd\": 0.0,\n-        \"total_fees_usd\": 0.0,\n-        \"net_settlement_usd\": total,\n-        \"imbalance_usd\": total,\n-        \"status\": \"IMBALANCED\",\n+        \"total_credits_usd\": total_credits_usd,\n+        \"total_debits_usd\": total_debits_usd,\n+        \"total_fees_usd\": total_fees_usd,\n+        \"net_settlement_usd\": net_settlement_usd,\n+        \"imbalance_usd\": imbalance_usd,\n+        \"status\": status,\n     }",
+                          "pytest_output": "FFFFF.                                                                   [100%]\n=================================== FAILURES ===================================\n_______________________ test_calculate_tax_round_half_up _______________________\n\n    def test_calculate_tax_round_half_up():\n        # 100.02 * 0.25 = 25.005 -> ROUND_HALF_UP must yield 25.01 (float round gives 25.0)\n>       assert calculate_tax(100.02, 0.25) == 25.01\nE       assert 25.0 == 25.01\nE        +  where 25.0 = calculate_tax(100.02, 0.25)\n\ntests/test_orderflow.py:13: AssertionError\n_________________________ test_round_currency_half_up __________________________\n\n    def test_round_currency_half_up():\n>       assert round_currency(2.505) == 2.51\nE       assert 2.5 == 2.51\nE        +  where 2.5 = round_currency(2.505)\n\ntests/test_orderflow.py:21: AssertionError\n________________________ test_validate_invoice_ref_luhn ________________________\n\n    def test_validate_invoice_ref_luhn():\n        # \"79927398713\" is a classic valid 11-digit Luhn number\n        assert validate_invoice_ref(\"79927398713\") is True\n        assert validate_invoice_ref(\"7992-7398-713\") is True\n        # Invalid check digit (last digit changed from 3 to 4)\n>       assert validate_invoice_ref(\"79927398714\") is False\nE       AssertionError: assert True is False\nE        +  where True = validate_invoice_ref('79927398714')\n\ntests/test_orderflow.py:32: AssertionError\n_________________ test_apply_stacked_discounts_caps_and_floors ________________"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "call_10382",
+                        "args": {
+                          "file_path": "orderflow/settlement.py",
+                          "pytest_target": "test_reconcile_batch_balanced_and_imbalanced",
+                          "new_string": "    total_credits_usd = 0.0\n    total_debits_usd = 0.0\n    total_fees_usd = 0.0\n\n    for entry in entries:\n        amount = entry.get(\"amount\", 0.0)\n        if amount <= 0:\n            continue\n        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n        usd_amount = round(amount * fx_rate, 2)\n        entry_type = entry.get(\"entry_type\")\n        if entry_type == \"credit\":\n            total_credits_usd += usd_amount\n            fee_bps = entry.get(\"fee_bps\", 0.0)\n            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n            total_fees_usd += entry_fee\n        elif entry_type == \"debit\":\n            total_debits_usd += usd_amount\n\n    total_credits_usd = round(total_credits_usd, 2)\n    total_debits_usd = round(total_debits_usd, 2)\n    total_fees_usd = round(total_fees_usd, 2)\n\n    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n\n    return {\n        \"total_credits_usd\": total_credits_usd,\n        \"total_debits_usd\": total_debits_usd,\n        \"total_fees_usd\": total_fees_usd,\n        \"net_settlement_usd\": net_settlement_usd,\n        \"imbalance_usd\": imbalance_usd,\n        \"status\": status,\n    }",
+                          "old_string": "    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n    return {\n        \"total_credits_usd\": total,\n        \"total_debits_usd\": 0.0,\n        \"total_fees_usd\": 0.0,\n        \"net_settlement_usd\": total,\n        \"imbalance_usd\": total,\n        \"status\": \"IMBALANCED\",\n    }"
+                        },
+                        "name": "test_and_verify_patch"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "call_10382",
+                        "name": "test_and_verify_patch",
+                        "response": {
+                          "status": "PASSED",
+                          "exit_code": 0,
+                          "unified_diff": "--- a/orderflow/settlement.py\n+++ b/orderflow/settlement.py\n@@ -30,13 +30,38 @@\n     Returns dict with keys:\n       total_credits_usd, total_debits_usd, total_fees_usd, net_settlement_usd, imbalance_usd, status\n     \"\"\"\n-    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n-    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n+    total_credits_usd = 0.0\n+    total_debits_usd = 0.0\n+    total_fees_usd = 0.0\n+\n+    for entry in entries:\n+        amount = entry.get(\"amount\", 0.0)\n+        if amount <= 0:\n+            continue\n+        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n+        usd_amount = round(amount * fx_rate, 2)\n+        entry_type = entry.get(\"entry_type\")\n+        if entry_type == \"credit\":\n+            total_credits_usd += usd_amount\n+            fee_bps = entry.get(\"fee_bps\", 0.0)\n+            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n+            total_fees_usd += entry_fee\n+        elif entry_type == \"debit\":\n+            total_debits_usd += usd_amount\n+\n+    total_credits_usd = round(total_credits_usd, 2)\n+    total_debits_usd = round(total_debits_usd, 2)\n+    total_fees_usd = round(total_fees_usd, 2)\n+\n+    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n+    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n+    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n+\n     return {\n-        \"total_credits_usd\": total,\n-        \"total_debits_usd\": 0.0,\n-        \"total_fees_usd\": 0.0,\n-        \"net_settlement_usd\": total,\n-        \"imbalance_usd\": total,\n-        \"status\": \"IMBALANCED\",\n+        \"total_credits_usd\": total_credits_usd,\n+        \"total_debits_usd\": total_debits_usd,\n+        \"total_fees_usd\": total_fees_usd,\n+        \"net_settlement_usd\": net_settlement_usd,\n+        \"imbalance_usd\": imbalance_usd,\n+        \"status\": status,\n     }",
+                          "pytest_output": ".                                                                        [100%]\n1 passed, 5 deselected in 0.03s"
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "The implementation of `reconcile_batch` in `orderflow/settlement.py` has been updated to follow the specification:\n- Entries with `amount <= 0` are skipped.\n- Valid amounts are converted to USD using `round(amount * fx_rate_to_usd, 2)`.\n- Credits and debits are accumulated separately.\n- Basis points fee `round(usd_amount * (fee_bps / 10000.0), 2)` is applied strictly to `\"credit\"` entries.\n- Intermediate and final amounts (`total_credits_usd`, `total_debits_usd`, `total_fees_usd`, `net_settlement_usd`, `imbalance_usd`) are rounded to 2 decimal places.\n- The status is set to `'BALANCED'` when `imbalance_usd < 0.01`, otherwise `'IMBALANCED'`.\n\n### Unified Diff\n```diff\n--- a/orderflow/settlement.py\n+++ b/orderflow/settlement.py\n@@ -30,13 +30,38 @@\n     Returns dict with keys:\n       total_credits_usd, total_debits_usd, total_fees_usd, net_settlement_usd, imbalance_usd, status\n     \"\"\"\n-    # BUG (PR-107): Stub implementation does not convert FX, deduct fees only on credits, or detect imbalance.\n-    total = round(sum(e.get(\"amount\", 0.0) for e in entries), 2)\n+    total_credits_usd = 0.0\n+    total_debits_usd = 0.0\n+    total_fees_usd = 0.0\n+\n+    for entry in entries:\n+        amount = entry.get(\"amount\", 0.0)\n+        if amount <= 0:\n+            continue\n+        fx_rate = entry.get(\"fx_rate_to_usd\", 1.0)\n+        usd_amount = round(amount * fx_rate, 2)\n+        entry_type = entry.get(\"entry_type\")\n+        if entry_type == \"credit\":\n+            total_credits_usd += usd_amount\n+            fee_bps = entry.get(\"fee_bps\", 0.0)\n+            entry_fee = round(usd_amount * (fee_bps / 10000.0), 2)\n+            total_fees_usd += entry_fee\n+        elif entry_type == \"debit\":\n+            total_debits_usd += usd_amount\n+\n+    total_credits_usd = round(total_credits_usd, 2)\n+    total_debits_usd = round(total_debits_usd, 2)\n+    total_fees_usd = round(total_fees_usd, 2)\n+\n+    net_settlement_usd = round(total_credits_usd - total_debits_usd - total_fees_usd, 2)\n+    imbalance_usd = round(abs(total_credits_usd - total_debits_usd), 2)\n+    status = \"BALANCED\" if imbalance_usd < 0.01 else \"IMBALANCED\"\n+\n     return {\n-        \"total_credits_usd\": total,\n-        \"total_debits_usd\": 0.0,\n-        \"total_fees_usd\": 0.0,\n-        \"net_settlement_usd\": total,\n-        \"imbalance_usd\": total,\n-        \"status\": \"IMBALANCED\",\n+        \"total_credits_usd\": total_credits_usd,\n+        \"total_debits_usd\": total_debits_usd,\n+        \"total_fees_usd\": total_fees_usd,\n+        \"net_settlement_usd\": net_settlement_usd,\n+        \"imbalance_usd\": imbalance_usd,\n+        \"status\": status,\n     }\n```\n\n### Verification\nThe test `test_reconcile_batch_balanced_and_imbalanced` was run via `test_and_verify_patch` and passed with status **PASSED** (1 passed, 5 deselected)."
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

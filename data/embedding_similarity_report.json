@@ -1,0 +1,132 @@
+{
+  "embedding_model": "gemini-embedding-2",
+  "embedding_dimension": 3072,
+  "dedup_similarity_threshold": 0.78,
+  "pr_labels": [
+    "PR#101",
+    "PR#102",
+    "PR#103",
+    "PR#104",
+    "PR#105",
+    "PR#106",
+    "PR#107"
+  ],
+  "cosine_similarity_matrix": [
+    [
+      1.0,
+      0.9374,
+      0.7088,
+      0.7479,
+      0.7269,
+      0.6959,
+      0.7015
+    ],
+    [
+      0.9374,
+      1.0,
+      0.7197,
+      0.7397,
+      0.7239,
+      0.7125,
+      0.7179
+    ],
+    [
+      0.7088,
+      0.7197,
+      1.0,
+      0.7008,
+      0.6938,
+      0.6664,
+      0.6564
+    ],
+    [
+      0.7479,
+      0.7397,
+      0.7008,
+      1.0,
+      0.9725,
+      0.7368,
+      0.6897
+    ],
+    [
+      0.7269,
+      0.7239,
+      0.6938,
+      0.9725,
+      1.0,
+      0.732,
+      0.6825
+    ],
+    [
+      0.6959,
+      0.7125,
+      0.6664,
+      0.7368,
+      0.732,
+      1.0,
+      0.6754
+    ],
+    [
+      0.7015,
+      0.7179,
+      0.6564,
+      0.6897,
+      0.6825,
+      0.6754,
+      1.0
+    ]
+  ],
+  "clusters": [
+    {
+      "cluster_id": "cluster_1",
+      "medoid_pr": 101,
+      "member_prs": [
+        101,
+        102
+      ],
+      "dropped_duplicates": [
+        102
+      ],
+      "max_intra_cluster_similarity": 0.9373986786689144
+    },
+    {
+      "cluster_id": "cluster_2",
+      "medoid_pr": 103,
+      "member_prs": [
+        103
+      ],
+      "dropped_duplicates": [],
+      "max_intra_cluster_similarity": 1.0
+    },
+    {
+      "cluster_id": "cluster_3",
+      "medoid_pr": 105,
+      "member_prs": [
+        104,
+        105
+      ],
+      "dropped_duplicates": [
+        104
+      ],
+      "max_intra_cluster_similarity": 0.9724587327237005
+    },
+    {
+      "cluster_id": "cluster_4",
+      "medoid_pr": 106,
+      "member_prs": [
+        106
+      ],
+      "dropped_duplicates": [],
+      "max_intra_cluster_similarity": 1.0
+    },
+    {
+      "cluster_id": "cluster_5",
+      "medoid_pr": 107,
+      "member_prs": [
+        107
+      ],
+      "dropped_duplicates": [],
+      "max_intra_cluster_similarity": 1.0
+    }
+  ]
+}

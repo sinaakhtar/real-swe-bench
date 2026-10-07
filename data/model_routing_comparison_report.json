@@ -1,0 +1,229 @@
+{
+  "models_compared": [
+    "claude-sonnet-5-5",
+    "gemini-3.8-flash"
+  ],
+  "baseline_generation_model": "claude-opus-5-5",
+  "embedding_model": "gemini-embedding-2",
+  "claude_sonnet_5_5_results_file": "artifacts/grade_results/claude_sonnet_5_5/results_20261002_131008.json",
+  "gemini_3_8_flash_results_file": "artifacts/grade_results/gemini_3_8_flash/results_20261006_212506.json",
+  "summary_metrics_comparison": {
+    "baseline": [
+      {
+        "metric_name": "pytest_unit_test_pass",
+        "num_cases_total": 5,
+        "num_cases_valid": 5,
+        "num_cases_error": 0,
+        "mean_score": 1.0,
+        "stdev_score": 0.0,
+        "pass_rate": null
+      },
+      {
+        "metric_name": "patch_semantic_equivalence",
+        "num_cases_total": 5,
+        "num_cases_valid": 5,
+        "num_cases_error": 0,
+        "mean_score": 5.0,
+        "stdev_score": 0.0,
+        "pass_rate": null
+      },
+      {
+        "metric_name": "multi_turn_task_success_v1",
+        "num_cases_total": 5,
+        "num_cases_valid": 5,
+        "num_cases_error": 0,
+        "mean_score": 1.0,
+        "stdev_score": 0.0,
+        "pass_rate": 1.0
+      },
+      {
+        "metric_name": "multi_turn_tool_use_quality_v1",
+        "num_cases_total": 5,
+        "num_cases_valid": 5,
+        "num_cases_error": 0,
+        "mean_score": 1.0,
+        "stdev_score": 0.0,
+        "pass_rate": 1.0
+      },
+      {
+        "metric_name": "agent_tool_call_count",
+        "num_cases_total": 5,
+        "num_cases_valid": 5,
+        "num_cases_error": 0,
+        "mean_score": 2.0,
+        "stdev_score": 0.0,
+        "pass_rate": null
+      }
+    ],
+    "candidate": [
+      {
+        "metric_name": "pytest_unit_test_pass",
+        "num_cases_total": 5,
+        "num_cases_valid": 5,
+        "num_cases_error": 0,
+        "mean_score": 1.0,
+        "stdev_score": 0.0,
+        "pass_rate": null
+      },
+      {
+        "metric_name": "patch_semantic_equivalence",
+        "num_cases_total": 5,
+        "num_cases_valid": 5,
+        "num_cases_error": 0,
+        "mean_score": 5.0,
+        "stdev_score": 0.0,
+        "pass_rate": null
+      },
+      {
+        "metric_name": "multi_turn_task_success_v1",
+        "num_cases_total": 5,
+        "num_cases_valid": 5,
+        "num_cases_error": 0,
+        "mean_score": 1.0,
+        "stdev_score": 0.0,
+        "pass_rate": 1.0
+      },
+      {
+        "metric_name": "multi_turn_tool_use_quality_v1",
+        "num_cases_total": 5,
+        "num_cases_valid": 5,
+        "num_cases_error": 0,
+        "mean_score": 1.0,
+        "stdev_score": 0.0,
+        "pass_rate": 1.0
+      },
+      {
+        "metric_name": "agent_tool_call_count",
+        "num_cases_total": 5,
+        "num_cases_valid": 5,
+        "num_cases_error": 0,
+        "mean_score": 5.4,
+        "stdev_score": 1.6733200530681511,
+        "pass_rate": null
+      }
+    ]
+  },
+  "per_case_comparison": [
+    {
+      "eval_case_id": "pr_101_tier_1_simple",
+      "gemini_3_8_flash": {
+        "eval_case_id": "pr_101_tier_1_simple",
+        "pytest_unit_test_pass": 1.0,
+        "patch_semantic_equivalence": 5.0,
+        "multi_turn_task_success": 1.0,
+        "multi_turn_tool_use_quality": 1.0,
+        "agent_tool_call_count": 4.0
+      },
+      "claude_sonnet_5_5": {
+        "eval_case_id": "pr_101_tier_1_simple",
+        "pytest_unit_test_pass": 1.0,
+        "patch_semantic_equivalence": 5.0,
+        "multi_turn_task_success": 1.0,
+        "multi_turn_tool_use_quality": 1.0,
+        "agent_tool_call_count": 2.0
+      }
+    },
+    {
+      "eval_case_id": "pr_103_tier_1_simple",
+      "gemini_3_8_flash": {
+        "eval_case_id": "pr_103_tier_1_simple",
+        "pytest_unit_test_pass": 1.0,
+        "patch_semantic_equivalence": 5.0,
+        "multi_turn_task_success": 1.0,
+        "multi_turn_tool_use_quality": 1.0,
+        "agent_tool_call_count": 5.0
+      },
+      "claude_sonnet_5_5": {
+        "eval_case_id": "pr_103_tier_1_simple",
+        "pytest_unit_test_pass": 1.0,
+        "patch_semantic_equivalence": 5.0,
+        "multi_turn_task_success": 1.0,
+        "multi_turn_tool_use_quality": 1.0,
+        "agent_tool_call_count": 2.0
+      }
+    },
+    {
+      "eval_case_id": "pr_105_tier_2_medium",
+      "gemini_3_8_flash": {
+        "eval_case_id": "pr_105_tier_2_medium",
+        "pytest_unit_test_pass": 1.0,
+        "patch_semantic_equivalence": 5.0,
+        "multi_turn_task_success": 1.0,
+        "multi_turn_tool_use_quality": 1.0,
+        "agent_tool_call_count": 6.0
+      },
+      "claude_sonnet_5_5": {
+        "eval_case_id": "pr_105_tier_2_medium",
+        "pytest_unit_test_pass": 1.0,
+        "patch_semantic_equivalence": 5.0,
+        "multi_turn_task_success": 1.0,
+        "multi_turn_tool_use_quality": 1.0,
+        "agent_tool_call_count": 2.0
+      }
+    },
+    {
+      "eval_case_id": "pr_106_tier_2_medium",
+      "gemini_3_8_flash": {
+        "eval_case_id": "pr_106_tier_2_medium",
+        "pytest_unit_test_pass": 1.0,
+        "patch_semantic_equivalence": 5.0,
+        "multi_turn_task_success": 1.0,
+        "multi_turn_tool_use_quality": 1.0,
+        "agent_tool_call_count": 4.0
+      },
+      "claude_sonnet_5_5": {
+        "eval_case_id": "pr_106_tier_2_medium",
+        "pytest_unit_test_pass": 1.0,
+        "patch_semantic_equivalence": 5.0,
+        "multi_turn_task_success": 1.0,
+        "multi_turn_tool_use_quality": 1.0,
+        "agent_tool_call_count": 2.0
+      }
+    },
+    {
+      "eval_case_id": "pr_107_tier_3_complex",
+      "gemini_3_8_flash": {
+        "eval_case_id": "pr_107_tier_3_complex",
+        "pytest_unit_test_pass": 1.0,
+        "patch_semantic_equivalence": 5.0,
+        "multi_turn_task_success": 1.0,
+        "multi_turn_tool_use_quality": 1.0,
+        "agent_tool_call_count": 8.0
+      },
+      "claude_sonnet_5_5": {
+        "eval_case_id": "pr_107_tier_3_complex",
+        "pytest_unit_test_pass": 1.0,
+        "patch_semantic_equivalence": 5.0,
+        "multi_turn_task_success": 1.0,
+        "multi_turn_tool_use_quality": 1.0,
+        "agent_tool_call_count": 2.0
+      }
+    }
+  ],
+  "pricing_per_1m_tokens_usd": {
+    "claude-opus-5-5 (Current Baseline)": {
+      "input": 4.0,
+      "output": 20.0,
+      "regional_input": 4.4,
+      "regional_output": 22.0,
+      "opus_4_6_input": 5.0,
+      "opus_4_6_output": 25.0
+    },
+    "claude-sonnet-5-5": {
+      "input": 2.0,
+      "output": 10.0,
+      "regional_input": 2.2,
+      "regional_output": 11.0,
+      "sonnet_4_6_input": 3.0,
+      "sonnet_4_6_output": 15.0
+    },
+    "gemini-3.8-flash": {
+      "input": 0.75,
+      "output": 3.75,
+      "standard_2027_input": 1.5,
+      "standard_2027_output": 7.5,
+      "gemini_3_flash_preview_input": 0.5,
+      "gemini_3_flash_preview_output": 3.0
+    }
+  }
+}
